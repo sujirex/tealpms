@@ -1,5 +1,5 @@
 /* ===== Teal PMS v2 — Data Layer & Utilities ===== */
-const TPMS_VERSION = '2';
+const TPMS_VERSION = '3';
 const KEY = k => `tpms2-${k}`;
 const store = {
   get: k => { try { return JSON.parse(localStorage.getItem(KEY(k))); } catch { return null; } },
@@ -97,7 +97,7 @@ const getActivities = () => store.get('activities') || [];
 function logActivity(type, text, ticketKey, projectId) {
   const acts = getActivities();
   acts.unshift({ id: `ACT-${Date.now()}`, type, text, ticketKey, projectId, createdAt: new Date().toISOString() });
-  store.set('activities', acts.slice(0, 200)); // keep last 200
+  store.set('activities', acts.slice(0, 200));
 }
 
 /* ---- Milestones ---- */
@@ -113,12 +113,10 @@ function updateMilestone(id, patch) { saveMilestones(getMilestones().map(m => m.
 /* ---- Seed & Migration ---- */
 function seedDemoData() {
   if (localStorage.getItem(KEY('version')) === TPMS_VERSION && getProjects().length > 0) return;
-  // Wipe old data
   ['projects','tickets','epics','sprints','team','milestones','activeProject']
     .forEach(k => store.del(k));
   localStorage.setItem(KEY('version'), TPMS_VERSION);
 
-  // Load from SEED if available
   if (typeof SEED !== 'undefined') {
     saveProjects(SEED.projects || []);
     saveTickets(SEED.tickets || []);
@@ -127,12 +125,14 @@ function seedDemoData() {
     saveTeam(SEED.team || []);
     saveMilestones(SEED.milestones || []);
     if (SEED.projects?.[0]) setActiveProject(SEED.projects[0].id);
-    // Seed some initial activity
     store.set('activities', [
-      { id:'ACT-1', type:'created', text:'Project ALPHA initialized with 15 tickets', ticketKey:'', projectId:'PRJ-ALPHA', createdAt: new Date(Date.now()-86400000*2).toISOString() },
-      { id:'ACT-2', type:'updated', text:'ALPHA-007: Status changed to In Progress', ticketKey:'ALPHA-007', projectId:'PRJ-ALPHA', createdAt: new Date(Date.now()-3600000*5).toISOString() },
-      { id:'ACT-3', type:'comment', text:'ALPHA-003: New comment added by User3', ticketKey:'ALPHA-003', projectId:'PRJ-ALPHA', createdAt: new Date(Date.now()-3600000*2).toISOString() },
-      { id:'ACT-4', type:'done', text:'BETA-002: Ticket marked as Done', ticketKey:'BETA-002', projectId:'PRJ-BETA', createdAt: new Date(Date.now()-1800000).toISOString() },
+      { id:'ACT-1', type:'created',  text:'Project ALPHA initialized with 25 tickets',        ticketKey:'',         projectId:'PRJ-001', createdAt: new Date(Date.now()-86400000*2).toISOString() },
+      { id:'ACT-2', type:'updated',  text:'ALPHA-12: Status changed to In Progress',          ticketKey:'ALPHA-12', projectId:'PRJ-001', createdAt: new Date(Date.now()-3600000*8).toISOString() },
+      { id:'ACT-3', type:'comment',  text:'ALPHA-11: New comment added by User4',             ticketKey:'ALPHA-11', projectId:'PRJ-001', createdAt: new Date(Date.now()-3600000*5).toISOString() },
+      { id:'ACT-4', type:'done',     text:'BETA-11: CDN fix marked as Done',                  ticketKey:'BETA-11',  projectId:'PRJ-002', createdAt: new Date(Date.now()-3600000*3).toISOString() },
+      { id:'ACT-5', type:'updated',  text:'GAMMA-1: CI/CD pipeline 50% complete',             ticketKey:'GAMMA-1',  projectId:'PRJ-003', createdAt: new Date(Date.now()-3600000*2).toISOString() },
+      { id:'ACT-6', type:'created',  text:'ALPHA-25: Bug reported — login fails on Safari 16',ticketKey:'ALPHA-25', projectId:'PRJ-001', createdAt: new Date(Date.now()-1800000).toISOString() },
+      { id:'ACT-7', type:'comment',  text:'BETA-12: Lighthouse score now at 87',              ticketKey:'BETA-12',  projectId:'PRJ-002', createdAt: new Date(Date.now()-900000).toISOString() },
     ]);
   }
 }
@@ -151,18 +151,37 @@ initTheme();
 
 /* ---- Nav builder ---- */
 const NAV = [
-  { key:'dashboard',  href:'index.html',     icon:'📊', label:'Dashboard' },
-  { key:'projects',   href:'projects.html',   icon:'📁', label:'Projects' },
-  { key:'tickets',    href:'tickets.html',    icon:'🎫', label:'Tickets' },
-  { key:'board',      href:'board.html',      icon:'📋', label:'Board' },
-  { key:'scrum',      href:'scrum.html',      icon:'🔄', label:'Sprints' },
-  { key:'gantt',      href:'gantt.html',      icon:'📅', label:'Gantt' },
-  { key:'roadmap',    href:'roadmap.html',    icon:'🗺️', label:'Roadmap' },
-  { key:'team',       href:'team.html',       icon:'👥', label:'Team' },
-  { key:'reports',    href:'reports.html',    icon:'📈', label:'Reports' },
-  { key:'import',     href:'import.html',     icon:'📥', label:'Import' },
-  { key:'guide',      href:'guide.html',      icon:'📖', label:'Guide' },
+  { key:'dashboard',  href:'index.html',     icon:'dashboard', label:'Dashboard' },
+  { key:'projects',   href:'projects.html',   icon:'folder',    label:'Projects' },
+  { key:'tickets',    href:'tickets.html',    icon:'ticket',    label:'Tickets' },
+  { key:'board',      href:'board.html',      icon:'board',     label:'Board' },
+  { key:'scrum',      href:'scrum.html',      icon:'sprint',    label:'Sprints' },
+  { key:'gantt',      href:'gantt.html',      icon:'gantt',     label:'Gantt' },
+  { key:'roadmap',    href:'roadmap.html',    icon:'roadmap',   label:'Roadmap' },
+  { key:'team',       href:'team.html',       icon:'team',      label:'Team' },
+  { key:'reports',    href:'reports.html',    icon:'chart',     label:'Reports' },
+  { key:'import',     href:'import.html',     icon:'import',    label:'Import' },
+  { key:'guide',      href:'guide.html',      icon:'guide',     label:'Guide' },
 ];
+
+/* Icon SVGs — avoids emoji encoding issues */
+function navIcon(type) {
+  const icons = {
+    dashboard: '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>',
+    folder:    '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3a1 1 0 011-1h4l2 2h6a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V3z"/></svg>',
+    ticket:    '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v2.586a1 1 0 01-.293.707L12 8l1.707 1.707A1 1 0 0114 10.414V13a1 1 0 01-1 1H3a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707L4 8 2.293 6.293A1 1 0 012 5.586V3z"/></svg>',
+    board:     '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="4" height="14" rx="1"/><rect x="6" y="1" width="4" height="10" rx="1"/><rect x="11" y="1" width="4" height="12" rx="1"/></svg>',
+    sprint:    '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a5 5 0 110 10A5 5 0 018 3zm0 2v3.586l2.207 2.207-1.414 1.414L6.5 10.5V5h1.5z"/></svg>',
+    gantt:     '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="8" height="3" rx="1"/><rect x="4" y="7" width="9" height="3" rx="1"/><rect x="2" y="12" width="7" height="2" rx="1"/></svg>',
+    roadmap:   '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v2H1V2zm2 4h10v2H3V6zm3 4h7v2H6v-2z"/></svg>',
+    team:      '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="5" r="3"/><circle cx="11" cy="5" r="2.5"/><path d="M0 13c0-2.761 2.239-5 5-5s5 2.239 5 5H0zm9.5 0c0-1.5-.5-2.866-1.352-3.948C8.72 8.384 9.843 8 11 8c2.485 0 4.5 2.015 4.5 4.5v.5H9.5z"/></svg>',
+    chart:     '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="9" width="3" height="6" rx="1"/><rect x="6" y="5" width="3" height="10" rx="1"/><rect x="11" y="1" width="3" height="14" rx="1"/></svg>',
+    import:    '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v8m0 0L5 6m3 3l3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>',
+    guide:     '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 1h10a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V2a1 1 0 011-1zm1 3v1h8V4H4zm0 3v1h8V7H4zm0 3v1h5v-1H4z"/></svg>',
+    moon:      '<svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><path d="M2.9 0.5C1.8 2.2 1.2 4.1 1.2 6c0 3.7 2.3 6.9 5.6 8.2.4.2.8-.2.7-.7C6.8 12.1 6.5 10.5 6.5 9c0-4.1 3-7.5 7-7.9.5 0 .7-.6.4-1C12.4.5 11.2 0 10 0 6.7 0 4 1.8 2.9.5z"/></svg>',
+  };
+  return icons[type] || '';
+}
 
 function buildNav(activeKey) {
   const proj = getActiveProject();
@@ -173,7 +192,7 @@ function buildNav(activeKey) {
   const navHtml = NAV.map(n => {
     const badge = n.key === 'tickets' && overdue > 0 ? `<span class="nav-badge warn">${overdue}</span>` : '';
     return `<a href="${n.href}" class="nav-item ${activeKey === n.key ? 'active' : ''}">
-      <span class="nav-icon">${n.icon}</span>${n.label}${badge}
+      <span class="nav-icon">${navIcon(n.icon)}</span>${n.label}${badge}
     </a>`;
   }).join('');
 
@@ -193,11 +212,11 @@ function buildNav(activeKey) {
         <div class="sidebar-project-label">Active Project</div>
         <div class="sidebar-project-name">${proj.name}</div>
       </div>` : ''}
-      <div class="sidebar-section">Main</div>
+      <div class="sidebar-section">Navigation</div>
       ${navHtml}
       <div class="sidebar-bottom">
         <a class="nav-item" onclick="toggleTheme();return false;" href="#">
-          <span class="nav-icon">🌓</span>Toggle Theme
+          <span class="nav-icon">${navIcon('moon')}</span>Toggle Theme
         </a>
       </div>
     </nav>
@@ -207,14 +226,17 @@ function buildNav(activeKey) {
       </div>
       <div class="topbar-actions">
         ${proj ? `<span style="font-size:11px;color:var(--primary);background:var(--primary-bg);padding:3px 10px;border:1px solid rgba(245,158,11,.25);border-radius:20px;font-weight:600">${proj.key}</span>` : ''}
-        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌓</button>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">${navIcon('moon')}</button>
       </div>
     </div>
     <div class="demo-banner">
-      🎯 Demo mode — sample data only &nbsp;·&nbsp; <a href="import.html">Import your data</a> &nbsp;·&nbsp; <a href="guide.html">Guide</a>
+      Demo mode &mdash; sample data only &nbsp;&bull;&nbsp;
+      <a href="import.html">Import your data</a> &nbsp;&bull;&nbsp;
+      <a href="guide.html">Guide</a>
     </div>
   `);
-  document.getElementById('toast-container') || document.body.insertAdjacentHTML('beforeend', '<div id="toast-container"></div>');
+  document.getElementById('toast-container') ||
+    document.body.insertAdjacentHTML('beforeend', '<div id="toast-container"></div>');
 }
 
 /* ---- Utilities ---- */
@@ -227,9 +249,16 @@ function daysFrom(iso) {
   if (!iso) return null;
   return Math.round((new Date(iso + 'T00:00:00') - new Date()) / 86400000);
 }
+function timeAgo(iso) {
+  const d = Math.round((Date.now() - new Date(iso)) / 1000);
+  if (d < 60) return 'just now';
+  if (d < 3600) return `${Math.floor(d/60)}m ago`;
+  if (d < 86400) return `${Math.floor(d/3600)}h ago`;
+  return `${Math.floor(d/86400)}d ago`;
+}
 function avatarColor(name) {
   const colors = ['#f59e0b','#f97316','#ef4444','#10b981','#38bdf8','#a78bfa','#f472b6','#22c55e','#fbbf24','#06b6d4'];
-  let h = 0; for (let c of String(name)) h = (h * 31 + c.charCodeAt(0)) & 0xFFFFFF;
+  let h = 0; for (const c of String(name)) h = (h * 31 + c.charCodeAt(0)) & 0xFFFFFF;
   return colors[Math.abs(h) % colors.length];
 }
 function initials(name) { return String(name).split(/[\s_]+/).slice(0,2).map(w => w[0]?.toUpperCase() || '').join(''); }
@@ -255,8 +284,8 @@ function typeBadge(t) {
   return `<span class="badge ${m[t]||'badge-task'}">${t||'Task'}</span>`;
 }
 function prioIcon(p) {
-  const m = { 'Critical':'🔴','High':'🟠','Medium':'🟡','Low':'🔵' };
-  return m[p] || '⚪';
+  const m = { 'Critical':'!', 'High':'H', 'Medium':'M', 'Low':'L' };
+  return m[p] || '?';
 }
 function progressBar(pct) {
   const p = Math.min(100, Math.max(0, pct || 0));
@@ -265,10 +294,12 @@ function progressBar(pct) {
 function toast(msg, type = 'pass') {
   const c = document.getElementById('toast-container'); if (!c) return;
   const el = document.createElement('div'); el.className = `toast ${type}`;
-  const icon = type === 'pass' ? '✅' : type === 'fail' ? '❌' : '⚠️';
+  const icon = type === 'pass' ? '&#10003;' : type === 'fail' ? '&#10007;' : '&#9888;';
   el.innerHTML = `${icon} ${msg}`;
   c.appendChild(el); setTimeout(() => el.remove(), 3200);
 }
+function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
 
 /* ---- Export / Import ---- */
 function exportData() {
@@ -280,4 +311,25 @@ function exportData() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   a.download = `TealPMS_backup_${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); toast('Backup e                                                                                                                                                                                                                                                                                                                                                             
+  a.click();
+  toast('Backup exported successfully!');
+}
+
+function importData(json) {
+  try {
+    const d = typeof json === 'string' ? JSON.parse(json) : json;
+    if (d.projects)   saveProjects(d.projects);
+    if (d.tickets)    saveTickets(d.tickets);
+    if (d.epics)      saveEpics(d.epics);
+    if (d.sprints)    saveSprints(d.sprints);
+    if (d.team)       saveTeam(d.team);
+    if (d.milestones) saveMilestones(d.milestones);
+    if (d.projects?.[0]) setActiveProject(d.projects[0].id);
+    localStorage.setItem(KEY('version'), TPMS_VERSION);
+    toast('Data imported successfully!');
+    return true;
+  } catch(e) {
+    toast('Import failed: ' + e.message, 'fail');
+    return false;
+  }
+}
