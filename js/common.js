@@ -215,6 +215,7 @@ function buildNav(activeKey) {
       <div class="sidebar-section">Navigation</div>
       ${navHtml}
       <div class="sidebar-bottom">
+        <div class="sidebar-credit">Demo App built by Suji Kumar C</div>
         <a class="nav-item" onclick="toggleTheme();return false;" href="#">
           <span class="nav-icon">${navIcon('moon')}</span>Toggle Theme
         </a>
@@ -322,7 +323,7 @@ function importData(json) {
     toast('Data imported successfully!');
     return true;
   } catch(e) {
-    toast('Import failed: ' + e.message, 'fail');
+     toast('Import failed: ' + e.message, 'fail');
     return false;
   }
 }
