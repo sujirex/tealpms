@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Teal PMS — Team</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/></head>
+<body>
+<script src="js/data.js"></script><script src="js/common.js"></script>
+<script>seedDemoData(); buildNav('team');</script>
+<div class="main-content">
+  <div class="page-header">
+    <div><div class="page-title">👥 Team & Workload</div><div class="page-sub">Team members, departments and assigned tickets</div></div>
+    <select class="form-control" id="f-dept" onchange="render()" style="max-width:180px"><option value="">All Departments</option></select>
+  </div>
+  <div id="dept-chips" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
+  <div class="grid-3" id="team-grid"></div>
+</div>
+<script>
+const proj = getActiveProject();
+const team = getTeam();
+const tickets = proj ? getTicketsByProject(proj.id) : [];
+const depts = [...new Set(team.map(m=>m.dept))];
+const deptSel = document.getElementById('f-dept');
+depts.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;deptSel.appendChild(o);});
+document.getElementById('dept-chips').innerHTML = depts.map(d=>`<button class="btn btn-outline btn-sm" onclick="document.getElementById('f-dept').value='${d}';render()">${d} (${team.filter(m=>m.dept===d).length})</button>`).join('');
+
+function render() {
+  const fd = document.getElementById('f-dept').value;
+  const filtered = team.filter(m => !fd || m.dept === fd);
+  document.getElementById('team-grid').innerHTML = filtered.map(m => {
+    const mt = tickets.filter(t => (t.assignees||[]).includes(m.name));
+    const open = mt.filter(t => t.status !== 'Done').length;
+    const pct = tickets.length ? Math.round(mt.length/tickets.length*100) : 0;
+    return `<div class="card" style="padding:18px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div class="avatar avatar-lg" style="background:${m.color}">${initials(m.name)}</div>
+        <div><div style="font-weight:600;font-size:14px">${m.name}</div><div style="font-size:12px;color:var(--text-muted)">${m.role}</div>
+        <span class="badge badge-task" style="margin-top:4px">${m.dept}</span></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">${mt.length} assigned · ${open} open</div>
+      ${progressBar(pct)}<div style="font-size:10px;color:var(--text-muted);margin-top:2px">Workload: ${pct}%</div>
+      <div style="margin-top:12px">${mt.slice(0,4).map(t=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border-dim)"><span style="width:6px;height:6px;border-radius:50%;background:${t.status==='Done'?'var(--pass)':t.status==='In Progress'?'var(--warn)':'var(--fail)'};flex-shrink:0"></span><span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${t.title}</span></div>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+render();
+</script>
+</body></html>

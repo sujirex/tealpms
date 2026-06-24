@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Teal PMS — Import</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/></head>
+<body>
+<script src="js/data.js"></script><script src="js/common.js"></script>
+<script src="js/import.js"></script>
+<script>seedDemoData(); buildNav('import');</script>
+<div class="main-content">
+  <div class="page-header">
+    <div><div class="page-title">📥 Import Projects</div><div class="page-sub">Import from Zoho Projects, Jira, Trello, Asana, or a Teal PMS backup</div></div>
+  </div>
+
+  <!-- Source cards -->
+  <div class="grid-3" style="margin-bottom:28px">
+    <div class="import-source-card" id="src-zoho" onclick="selectSource('zoho')">
+      <div class="import-source-icon">🟠</div>
+      <div class="import-source-name">Zoho Projects</div>
+      <div class="import-source-desc">CSV export from Zoho Projects task list</div>
+    </div>
+    <div class="import-source-card" id="src-jira" onclick="selectSource('jira')">
+      <div class="import-source-icon">🔵</div>
+      <div class="import-source-name">Jira</div>
+      <div class="import-source-desc">XML or JSON export from Jira (next-gen & classic)</div>
+    </div>
+    <div class="import-source-card" id="src-trello" onclick="selectSource('trello')">
+      <div class="import-source-icon">🟦</div>
+      <div class="import-source-name">Trello</div>
+      <div class="import-source-desc">JSON export from a Trello board</div>
+    </div>
+    <div class="import-source-card" id="src-asana" onclick="selectSource('asana')">
+      <div class="import-source-icon">🟤</div>
+      <div class="import-source-name">Asana</div>
+      <div class="import-source-desc">CSV export from Asana task list</div>
+    </div>
+    <div class="import-source-card" id="src-backup" onclick="selectSource('backup')">
+      <div class="import-source-icon">💾</div>
+      <div class="import-source-name">Teal PMS Backup</div>
+      <div class="import-source-desc">Restore a full JSON backup from Teal PMS</div>
+    </div>
+    <div class="import-source-card" style="opacity:.4;cursor:default">
+      <div class="import-source-icon">🔜</div>
+      <div class="import-source-name">More coming…</div>
+      <div class="import-source-desc">Monday.com, Linear, Basecamp (planned)</div>
+    </div>
+  </div>
+
+  <!-- Step wizard -->
+  <div id="import-wizard" style="display:none">
+    <div class="card card-body" style="margin-bottom:20px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+        <div class="step-badge active" id="step1-badge">1</div><span style="font-size:13px;font-weight:600">Choose File</span>
+        <div style="height:1px;flex:1;background:var(--border)"></div>
+        <div class="step-badge" id="step2-badge">2</div><span style="font-size:13px;font-weight:600">Map Project</span>
+        <div style="height:1px;flex:1;background:var(--border)"></div>
+        <div class="step-badge" id="step3-badge">3</div><span style="font-size:13px;font-weight:600">Preview & Import</span>
+      </div>
+
+      <!-- Step 1 -->
+      <div id="step1">
+        <div class="import-dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event)">
+          <div style="font-size:40px;margin-bottom:12px">📁</div>
+          <div style="font-weight:600">Drop file here or click to browse</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px" id="accepted-ext">Accepted: .csv, .json, .xml</div>
+        </div>
+        <input type="file" id="fileInput" style="display:none" onchange="handleFile(this.files[0])"/>
+        <div id="file-info" style="display:none;margin-top:12px;padding:12px;background:var(--bg-card);border-radius:8px;font-size:13px"></div>
+      </div>
+
+      <!-- Step 2 -->
+      <div id="step2" style="display:none">
+        <div class="form-group"><label>Target Project</label>
+          <select class="form-control" id="target-project">
+            <option value="__new__">➕ Create new project from import</option>
+          </select>
+        </div>
+        <div id="new-project-fields">
+          <div class="form-row">
+            <div class="form-group"><label>New Project Name</label><input class="form-control" id="new-proj-name" placeholder="e.g. Imported Project"/></div>
+            <div class="form-group"><label>Project Key</label><input class="form-control" id="new-proj-key" placeholder="e.g. IMP" maxlength="6"/></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-outline" onclick="goStep(1)">← Back</button>
+          <button class="btn btn-primary" onclick="goStep(3)">Preview →</button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div id="step3" style="display:none">
+        <div id="preview-content"></div>
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button class="btn btn-outline" onclick="goStep(2)">← Back</button>
+          <button class="btn btn-primary" onclick="doImport()" id="import-btn">Import Now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How-to guides -->
+  <div class="card card-body" id="how-to-section">
+    <div style="font-weight:600;margin-bottom:14px">📖 How to Export From Each Tool</div>
+    <div id="guide-content">
+      <div class="import-guide-item">
+        <div class="import-guide-title">🟠 Zoho Projects</div>
+        <div class="import-guide-steps">Go to <strong>Tasks</strong> → <strong>Export</strong> → Export as CSV. Select all columns. Download the CSV file.</div>
+      </div>
+      <div class="import-guide-item">
+        <div class="import-guide-title">🔵 Jira</div>
+        <div class="import-guide-steps">Go to <strong>Issues</strong> → <strong>Export</strong> → Export XML (for full data) or use Jira's <em>Backup for Cloud</em> JSON export.</div>
+      </div>
+      <div class="import-guide-item">
+        <div class="import-guide-title">🟦 Trello</div>
+        <div class="import-guide-steps">Open your board → click <strong>Show menu</strong> → <strong>More</strong> → <strong>Print and Export</strong> → <strong>Export as JSON</strong>.</div>
+      </div>
+      <div class="import-guide-item">
+        <div class="import-guide-title">🟤 Asana</div>
+        <div class="import-guide-steps">Open your project → click <strong>⋯</strong> → <strong>Export/Print</strong> → <strong>CSV</strong>. Download the file.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedSource = null, parsedData = null, fileContent = null, fileName = null;
+
+function selectSource(src) {
+  document.querySelectorAll('.import-source-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('src-'+src).classList.add('selected');
+  selectedSource = src;
+  document.getElementById('import-wizard').style.display = 'block';
+  document.getElementById('how-to-section').style.display = 'none';
+  const exts = {zoho:'.csv',jira:'.xml, .json',trello:'.json',asana:'.csv',backup:'.json'};
+  document.getElementById('accepted-ext').textContent = 'Accepted: ' + (exts[src]||'');
+  goStep(1);
+
+  // Fill projects dropdown
+  const sel = document.getElementById('target-project');
+  sel.innerHTML = '<option value="__new__">➕ Create new project from import</option>';
+  getProjects().forEach(p=>{ const o=document.createElement('option');o.value=p.id;o.textContent=p.name; sel.appendChild(o); });
+  sel.onchange = () => { document.getElementById('new-project-fields').style.display = sel.value==='__new__'?'block':'none'; };
+}
+
+function goStep(n) {
+  [1,2,3].forEach(i=>{ document.getElementById('step'+i).style.display=i===n?'block':'none'; document.getElementById('step'+i+'-badge').classList.toggle('active',i<=n); });
+  if (n===3) buildPreview();
+}
+
+function handleDrop(e) { e.preventDefault(); document.getElementById('dropzone').classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); }
+
+function handleFile(file) {
+  if(!file) return;
+  fileName = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    fileContent = e.target.result;
+    document.getElementById('file-info').style.display='block';
+    document.getElementById('file-info').innerHTML=`✅ <strong>${file.name}</strong> — ${(file.size/1024).toFixed(1)} KB`;
+    document.getElementById('new-proj-name').value = file.name.replace(/\.[^.]+$/,'');
+    document.getElementById('new-proj-key').value = file.name.replace(/\.[^.]+$/,'').replace(/[^A-Z]/gi,'').toUpperCase().slice(0,5) || 'IMP';
+    setTimeout(()=>goStep(2), 300);
+  };
+  reader.readAsText(file);
+}
+
+function buildPreview() {
+  if(!fileContent){document.getElementById('preview-content').innerHTML='<p style="color:var(--fail)">No file loaded.</p>';return;}
+  try {
+    const projId = document.getElementById('target-project').value;
+    const projKey = projId==='__new__' ? document.getElementById('new-proj-key').value||'IMP' : getProjects().find(p=>p.id===projId)?.key||'IMP';
+    parsedData = runImport(selectedSource, fileName, fileContent, projId, projKey);
+    document.getElementById('preview-content').innerHTML = `
+      <div style="background:var(--bg-card);padding:16px;border-radius:8px;margin-bottom:12px">
+        <div style="font-weight:600;margin-bottom:8px">Import Preview</div>
+        <div style="font-size:13px;color:var(--text-muted)">Source: <strong style="color:var(--text)">${selectedSource}</strong> &nbsp;·&nbsp; File: <strong style="color:var(--text)">${fileName}</strong></div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:4px">Tickets found: <strong style="color:var(--teal-br)">${parsedData.tickets?.length||0}</strong></div>
+        ${parsedData.project?`<div style="font-size:13px;color:var(--text-muted);margin-top:4px">Project: <strong style="color:var(--teal-br)">${parsedData.project.name}</strong></div>`:''}
+      </div>
+      ${parsedData.tickets?.length?`<div class="table-wrap" style="max-height:260px"><table><thead><tr><th>Key</th><th>Title</th><th>Type</th><th>Status</th><th>Priority</th></tr></thead><tbody>${parsedData.tickets.slice(0,20).map(t=>`<tr><td><span class="ticket-key">${t.key}</span></td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</td><td>${typeBadge(t.type)}</td><td>${statusBadge(t.status)}</td><td>${priorityBadge(t.priority)}</td></tr>`).join('')}${parsedData.tickets.length>20?`<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">…and ${parsedData.tickets.length-20} more</td></tr>`:''}</tbody></table></div>`:'<p style="color:var(--text-muted)">No tickets found in the file.</p>'}
+    `;
+  } catch(err) {
+    document.getElementById('preview-content').innerHTML=`<div style="color:var(--fail);padding:12px">❌ Parse error: ${err.message}</div>`;
+  }
+}
+
+function doImport() {
+  if(!parsedData){toast('Nothing to import','fail');return;}
+  try {
+    const projId = document.getElementById('target-project').value;
+    if(projId==='__new__' && parsedData.project) {
+      parsedData.project.name = document.getElementById('new-proj-name').value || parsedData.project.name;
+      parsedData.project.key = document.getElementById('new-proj-key').value || parsedData.project.key;
+    }
+    if(selectedSource==='backup') { importData(); return; }
+    commitImport(parsedData, projId==='__new__');
+    toast(`Imported ${parsedData.tickets?.length||0} tickets ✓`);
+    setTimeout(()=>{ window.location.href='tickets.html'; }, 1200);
+  } catch(e) { toast('Import failed: '+e.message,'fail'); }
+}
+</script>
+</body></html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Teal PMS — Tickets</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/></head>
+<body>
+<script src="js/data.js"></script><script src="js/common.js"></script>
+<script>seedDemoData(); buildNav('tickets');</script>
+
+<!-- New Ticket Modal -->
+<div class="modal-overlay" id="new-ticket-modal">
+  <div class="modal modal-lg"><div class="modal-header"><span class="modal-title">New Ticket</span><button class="modal-close" onclick="closeNewModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="form-group"><label>Title *</label><input class="form-control" id="nt-title" placeholder="Describe the ticket…"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>Type</label><select class="form-control" id="nt-type"><option>Task</option><option>Bug</option><option>Feature</option><option>Story</option><option>Improvement</option></select></div>
+      <div class="form-group"><label>Status</label><select class="form-control" id="nt-status"><option>Backlog</option><option>Todo</option><option>In Progress</option><option>Review</option><option>Done</option></select></div>
+      <div class="form-group"><label>Priority</label><select class="form-control" id="nt-priority"><option>Medium</option><option>Critical</option><option>High</option><option>Low</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Assignees (comma separated)</label><input class="form-control" id="nt-assignees" placeholder="User1, User2"/></div>
+      <div class="form-group"><label>Epic</label><select class="form-control" id="nt-epic"><option value="">— None —</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Start Date</label><input class="form-control" type="date" id="nt-start"/></div>
+      <div class="form-group"><label>Due Date</label><input class="form-control" type="date" id="nt-due"/></div>
+      <div class="form-group"><label>Estimated Hours</label><input class="form-control" type="number" id="nt-est" placeholder="0" min="0"/></div>
+    </div>
+    <div class="form-group"><label>Labels (comma separated)</label><input class="form-control" id="nt-labels" placeholder="frontend, auth"/></div>
+    <div class="form-group"><label>Description</label><textarea class="form-control" id="nt-desc" rows="3" placeholder="Details, acceptance criteria…"></textarea></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeNewModal()">Cancel</button><button class="btn btn-primary" onclick="saveNewTicket()">Create Ticket</button></div>
+  </div>
+</div>
+
+<!-- Ticket Detail Modal -->
+<div class="modal-overlay" id="ticket-detail-modal">
+  <div class="modal modal-lg" style="max-width:920px"><div class="modal-header">
+    <div><span class="ticket-key" id="td-key"></span> <span class="modal-title" id="td-title-h"></span></div>
+    <button class="modal-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="ticket-detail-grid">
+      <div>
+        <div class="form-group" style="margin-bottom:14px"><label>Title</label><input class="form-control" id="td-title" onchange="patchTicket('title',this.value)"/></div>
+        <div class="form-group" style="margin-bottom:14px"><label>Description</label><textarea class="form-control" id="td-desc" rows="4" onchange="patchTicket('description',this.value)"></textarea></div>
+        <hr style="border-color:var(--border);margin-bottom:14px"/>
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)">💬 Comments</div>
+        <div class="comment-list" id="td-comments"></div>
+        <div class="comment-input-row" style="margin-top:12px">
+          <textarea class="form-control" id="td-comment-input" rows="2" placeholder="Add a comment…"></textarea>
+          <button class="btn btn-primary" style="flex-shrink:0" onclick="postComment()">Post</button>
+        </div>
+        <hr style="border-color:var(--border);margin:14px 0"/>
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)">⏱ Time Log</div>
+        <div id="td-timelog"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input class="form-control" type="number" id="td-log-h" placeholder="Hours" min="0.5" step="0.5" style="width:100px"/>
+          <input class="form-control" id="td-log-act" placeholder="Activity" style="flex:1"/>
+          <button class="btn btn-outline" onclick="postTimeLog()">Log</button>
+        </div>
+      </div>
+      <div>
+        <div class="ticket-sidebar-field"><label>Status</label><select class="form-control" id="td-status" onchange="patchTicket('status',this.value)"><option>Backlog</option><option>Todo</option><option>In Progress</option><option>Review</option><option>Done</option><option>Blocked</option></select></div>
+        <div class="ticket-sidebar-field"><label>Type</label><select class="form-control" id="td-type" onchange="patchTicket('type',this.value)"><option>Task</option><option>Bug</option><option>Feature</option><option>Story</option><option>Improvement</option><option>Epic</option></select></div>
+        <div class="ticket-sidebar-field"><label>Priority</label><select class="form-control" id="td-priority" onchange="patchTicket('priority',this.value)"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+        <div class="ticket-sidebar-field"><label>Assignees</label><input class="form-control" id="td-assignees" placeholder="User1, User2" onchange="patchTicket('assignees',this.value.split(',').map(a=>a.trim()).filter(Boolean))"/></div>
+        <div class="ticket-sidebar-field"><label>Start Date</label><input class="form-control" type="date" id="td-start" onchange="patchTicket('startDate',this.value)"/></div>
+        <div class="ticket-sidebar-field"><label>Due Date</label><input class="form-control" type="date" id="td-due" onchange="patchTicket('dueDate',this.value)"/></div>
+        <div class="ticket-sidebar-field"><label>% Complete</label><input class="form-control" type="number" id="td-pct" min="0" max="100" onchange="patchTicket('pctComplete',+this.value)"/></div>
+        <div class="ticket-sidebar-field"><label>Est. Hours</label><input class="form-control" type="number" id="td-est" min="0" step="0.5" onchange="patchTicket('estimatedHours',+this.value)"/></div>
+        <div style="margin-top:8px;padding:10px;background:var(--bg-hover);border-radius:var(--radius);font-size:12px">
+          <div>Logged: <strong id="td-logged">0</strong>h</div>
+          <div style="margin-top:4px" id="td-prog-bar"></div>
+        </div>
+        <div style="margin-top:14px"><button class="btn btn-danger btn-sm" onclick="deleteCurrentTicket()">🗑 Delete</button></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<div class="main-content">
+  <div class="page-header">
+    <div><div class="page-title">🎫 Tickets</div><div class="page-sub" id="ticket-sub"></div></div>
+    <button class="btn btn-primary" onclick="openNewModal()">+ New Ticket</button>
+  </div>
+  <div class="filter-bar">
+    <select class="form-control" id="f-status" onchange="applyFilters()"><option value="">All Status</option><option>Backlog</option><option>Todo</option><option>In Progress</option><option>Review</option><option>Done</option><option>Blocked</option></select>
+    <select class="form-control" id="f-type" onchange="applyFilters()"><option value="">All Types</option><option>Task</option><option>Bug</option><option>Feature</option><option>Story</option><option>Improvement</option></select>
+    <select class="form-control" id="f-priority" onchange="applyFilters()"><option value="">All Priority</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+    <select class="form-control" id="f-epic" onchange="applyFilters()"><option value="">All Epics</option></select>
+    <input class="form-control" id="f-search" placeholder="Search tickets…" oninput="applyFilters()" style="flex:1;max-width:280px"/>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table><thead><tr><th>Key</th><th>Title</th><th>Type</th><th>Status</th><th>Priority</th><th>Assignees</th><th>Due</th><th>Progress</th></tr></thead>
+      <tbody id="ticket-table"></tbody></table>
+    </div>
+  </div>
+</div>
+<script>
+const proj = getActiveProject();
+document.getElementById('ticket-sub').textContent = proj ? `${proj.name} (${proj.key}) · ${calcProjectStats(proj.id).total} tickets` : '';
+
+// Populate epic filter
+const epics = proj ? getEpicsByProject(proj.id) : [];
+const epicSel = document.getElementById('f-epic');
+epics.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.name; epicSel.appendChild(o); });
+
+// Populate new-ticket epic dropdown
+const ntEpic = document.getElementById('nt-epic');
+epics.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.name; ntEpic.appendChild(o); });
+
+let currentDetailId = null;
+
+function applyFilters() {
+  const tickets = proj ? getTicketsByProject(proj.id) : [];
+  const fs = document.getElementById('f-status').value;
+  const ft = document.getElementById('f-type').value;
+  const fp = document.getElementById('f-priority').value;
+  const fe = document.getElementById('f-epic').value;
+  const fq = document.getElementById('f-search').value.toLowerCase();
+  const q = new URLSearchParams(location.search).get('q') || fq;
+  const filtered = tickets.filter(t =>
+    (!fs || t.status === fs) && (!ft || t.type === ft) && (!fp || t.priority === fp) &&
+    (!fe || t.epicId === fe) && (!q || t.title.toLowerCase().includes(q) || (t.key||'').toLowerCase().includes(q))
+  );
+  document.getElementById('ticket-table').innerHTML = filtered.map(t => `<tr style="cursor:pointer" onclick="openDetail('${t.id}')">
+    <td><span class="ticket-key">${t.key}</span></td>
+    <td style="max-width:280px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">${t.title}</div>${t.labels?.length?`<div>${t.labels.map(l=>`<span class="label-chip" style="font-size:10px">${l}</span>`).join('')}</div>`:''}</td>
+    <td>${typeBadge(t.type)}</td>
+    <td>${statusBadge(t.status)}</td>
+    <td>${priorityBadge(t.priority)}</td>
+    <td>${renderAvatars(t.assignees)}</td>
+    <td style="font-size:12px;color:${t.dueDate&&new Date(t.dueDate)<new Date()&&t.status!=='Done'?'var(--fail)':'var(--text-muted)'}">${fmtDate(t.dueDate)}</td>
+    <td style="min-width:90px">${progressBar(t.pctComplete)}</td>
+  </tr>`).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">No tickets found</td></tr>`;
+}
+
+function openDetail(id) {
+  currentDetailId = id;
+  const t = getTicket(id); if (!t) return;
+  document.getElementById('td-key').textContent = t.key;
+  document.getElementById('td-title-h').textContent = t.title;
+  document.getElementById('td-title').value = t.title;
+  document.getElementById('td-desc').value = t.description || '';
+  document.getElementById('td-status').value = t.status || 'Backlog';
+  document.getElementById('td-type').value = t.type || 'Task';
+  document.getElementById('td-priority').value = t.priority || 'Medium';
+  document.getElementById('td-assignees').value = (t.assignees||[]).join(', ');
+  document.getElementById('td-start').value = t.startDate || '';
+  document.getElementById('td-due').value = t.dueDate || '';
+  document.getElementById('td-pct').value = t.pctComplete || 0;
+  document.getElementById('td-est').value = t.estimatedHours || 0;
+  document.getElementById('td-logged').textContent = (t.loggedHours||0).toFixed(1);
+  document.getElementById('td-prog-bar').innerHTML = progressBar(t.estimatedHours ? Math.min(100, Math.round((t.loggedHours||0)/t.estimatedHours*100)) : 0);
+  renderComments(t.comments||[]);
+  renderTimeLog(t.timeLog||[]);
+  document.getElementById('ticket-detail-modal').classList.add('open');
+}
+function closeDetail() { document.getElementById('ticket-detail-modal').classList.remove('open'); applyFilters(); }
+function patchTicket(field, val) { if(currentDetailId) { updateTicket(currentDetailId, {[field]:val}); } }
+function renderComments(comments) {
+  document.getElementById('td-comments').innerHTML = comments.map(c=>`<div class="comment-item"><div class="avatar" style="background:${avatarColor(c.author)};flex-shrink:0">${initials(c.author)}</div><div class="comment-body"><span class="comment-author">${c.author}</span><span class="comment-time">${fmtDate(c.createdAt?.slice(0,10))}</span><div class="comment-text">${c.text}</div></div></div>`).join('') || '<p style="color:var(--text-muted);font-size:12px">No comments yet</p>';
+}
+function renderTimeLog(log) {
+  document.getElementById('td-timelog').innerHTML = log.map(e=>`<div class="timelog-entry"><div class="timelog-hours">${e.hours}h</div><div style="flex:1"><div style="font-size:12px">${e.activity||'Work'}</div><div style="font-size:11px;color:var(--text-muted)">${e.userId} · ${fmtDate(e.date?.slice(0,10))}</div></div></div>`).join('') || '<p style="font-size:12px;color:var(--text-muted)">No time logged</p>';
+}
+function postComment() {
+  const text = document.getElementById('td-comment-input').value.trim(); if(!text) return;
+  addComment(currentDetailId, text, 'User'); document.getElementById('td-comment-input').value='';
+  const t = getTicket(currentDetailId); renderComments(t?.comments||[]); toast('Comment added');
+}
+function postTimeLog() {
+  const h = parseFloat(document.getElementById('td-log-h').value); const act = document.getElementById('td-log-act').value.trim();
+  if (!h || h <= 0) { toast('Enter valid hours','fail'); return; }
+  logTime(currentDetailId, h, act || 'Work', '', 'User');
+  document.getElementById('td-log-h').value=''; document.getElementById('td-log-act').value='';
+  const t = getTicket(currentDetailId); document.getElementById('td-logged').textContent=(t.loggedHours||0).toFixed(1); renderTimeLog(t?.timeLog||[]); toast('Time logged ✓');
+}
+function deleteCurrentTicket() { if(confirm('Delete this ticket?')) { deleteTicket(currentDetailId); closeDetail(); toast('Ticket deleted'); } }
+function openNewModal() { document.getElementById('new-ticket-modal').classList.add('open'); }
+function closeNewModal() { document.getElementById('new-ticket-modal').classList.remove('open'); }
+function saveNewTicket() {
+  const title = document.getElementById('nt-title').value.trim(); if(!title){ toast('Title required','fail'); return; }
+  createTicket({ projectId: proj?.id||'PRJ-001', title, type:document.getElementById('nt-type').value, status:document.getElementById('nt-status').value, priority:document.getElementById('nt-priority').value, assignees:document.getElementById('nt-assignees').value.split(',').map(a=>a.trim()).filter(Boolean), epicId:document.getElementById('nt-epic').value||null, startDate:document.getElementById('nt-start').value||null, dueDate:document.getElementById('nt-due').value||null, estimatedHours:+document.getElementById('nt-est').value||0, labels:document.getElementById('nt-labels').value.split(',').map(l=>l.trim()).filter(Boolean), description:document.getElementById('nt-desc').value, pctComplete:0, loggedHours:0, reporter:'User' });
+  closeNewModal(); applyFilters(); toast('Ticket created ✓');
+}
+// Apply URL search param
+const urlQ = new URLSearchParams(location.search).get('q');
+if (urlQ) document.getElementById('f-search').value = urlQ;
+applyFilters();
+</script>
+</body></html>

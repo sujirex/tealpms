@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Teal PMS — Projects</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/></head>
+<body>
+<script src="js/data.js"></script><script src="js/common.js"></script>
+<script>seedDemoData(); buildNav('projects');</script>
+<div class="modal-overlay" id="proj-modal">
+  <div class="modal"><div class="modal-header"><span class="modal-title" id="pm-title">New Project</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="form-row">
+      <div class="form-group" style="flex:2"><label>Project Name *</label><input class="form-control" id="pm-name" placeholder="e.g. Project Alpha"/></div>
+      <div class="form-group"><label>Key *</label><input class="form-control" id="pm-key" placeholder="ALPHA" maxlength="8" style="text-transform:uppercase"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Category</label><select class="form-control" id="pm-cat"><option>Software</option><option>Marketing</option><option>Infrastructure</option><option>Design</option><option>Research</option><option>Operations</option></select></div>
+      <div class="form-group"><label>Status</label><select class="form-control" id="pm-status"><option>Active</option><option>On Hold</option><option>Completed</option><option>Cancelled</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Start Date</label><input class="form-control" type="date" id="pm-start"/></div>
+      <div class="form-group"><label>Due Date</label><input class="form-control" type="date" id="pm-due"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Icon (emoji)</label><input class="form-control" id="pm-icon" placeholder="🚀" maxlength="4"/></div>
+      <div class="form-group"><label>Color</label><input class="form-control" type="color" id="pm-color" value="#0DC8C8"/></div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea class="form-control" id="pm-desc" rows="2" placeholder="What is this project about?"></textarea></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveProject()">Save Project</button></div>
+  </div>
+</div>
+<div class="main-content">
+  <div class="page-header">
+    <div><div class="page-title">📁 Projects</div><div class="page-sub">All projects and their status</div></div>
+    <button class="btn btn-primary" onclick="openModal()">+ New Project</button>
+  </div>
+  <div class="project-grid" id="project-grid"></div>
+</div>
+<script>
+function render() {
+  const projects = getProjects();
+  const activeId = getActiveProjectId();
+  document.getElementById('project-grid').innerHTML = projects.map(p => {
+    const s = calcProjectStats(p.id);
+    const isActive = p.id === activeId;
+    return `<div class="project-card ${isActive?'active-proj':''}" onclick="setActive('${p.id}')">
+      <div class="project-card-header">
+        <div class="project-icon" style="background:${p.color}22">${p.icon||'📁'}</div>
+        <div style="flex:1;min-width:0">
+          <div class="project-name">${p.name}</div>
+          <div class="project-key">${p.key} · ${p.category||''}</div>
+        </div>
+        ${isActive?'<span class="badge badge-done">Active</span>':''}
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;min-height:32px;line-height:1.6">${p.description||''}</div>
+      <div class="project-card-stats">
+        <div class="proj-stat"><div class="proj-stat-val">${s.total}</div><div class="proj-stat-lbl">Tickets</div></div>
+        <div class="proj-stat"><div class="proj-stat-val" style="color:var(--pass)">${s.done}</div><div class="proj-stat-lbl">Done</div></div>
+        <div class="proj-stat"><div class="proj-stat-val" style="color:var(--warn)">${s.inProg}</div><div class="proj-stat-lbl">Active</div></div>
+        <div class="proj-stat"><div class="proj-stat-val" style="color:var(--fail)">${s.overdue}</div><div class="proj-stat-lbl">Overdue</div></div>
+      </div>
+      <div style="margin-bottom:10px">${progressBar(s.pct)}<span style="font-size:11px;color:var(--text-muted)">${s.pct}% complete</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--text-muted)">Due ${fmtDate(p.dueDate)}</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editProject('${p.id}')">Edit</button>
+          <a href="tickets.html" class="btn btn-outline btn-sm" onclick="event.stopPropagation();setActiveProject('${p.id}')">Open →</a>
+        </div>
+      </div>
+    </div>`;
+  }).join('') + `<div class="project-card" style="border-style:dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:220px;cursor:pointer" onclick="openModal()">
+    <div style="font-size:40px">➕</div>
+    <div style="font-size:14px;font-weight:600;color:var(--text-dim)">New Project</div>
+  </div>`;
+}
+function setActive(id) { setActiveProject(id); render(); toast('Active project changed'); location.reload(); }
+let editId = null;
+function openModal(id = null) {
+  editId = id;
+  document.getElementById('pm-title').textContent = id ? 'Edit Project' : 'New Project';
+  if (id) { const p = getProject(id); if(p){ document.getElementById('pm-name').value=p.name; document.getElementById('pm-key').value=p.key; document.getElementById('pm-cat').value=p.category||'Software'; document.getElementById('pm-status').value=p.status||'Active'; document.getElementById('pm-start').value=p.startDate||''; document.getElementById('pm-due').value=p.dueDate||''; document.getElementById('pm-icon').value=p.icon||''; document.getElementById('pm-color').value=p.color||'#0DC8C8'; document.getElementById('pm-desc').value=p.description||''; }}
+  document.getElementById('proj-modal').classList.add('open');
+}
+function editProject(id) { openModal(id); }
+function closeModal() { document.getElementById('proj-modal').classList.remove('open'); editId=null; }
+function saveProject() {
+  const name = document.getElementById('pm-name').value.trim();
+  const key = document.getElementById('pm-key').value.trim().toUpperCase();
+  if (!name || !key) { toast('Name and Key are required','fail'); return; }
+  const data = { name, key, category:document.getElementById('pm-cat').value, status:document.getElementById('pm-status').value, startDate:document.getElementById('pm-start').value, dueDate:document.getElementById('pm-due').value, icon:document.getElementById('pm-icon').value||'📁', color:document.getElementById('pm-color').value, description:document.getElementById('pm-desc').value };
+  if (editId) { updateProject(editId, data); } else { createProject({ id:`PRJ-${Date.now()}`, ...data }); }
+  closeModal(); render(); toast('Project saved ✓');
+}
+render();
+</script>
+</body></html>

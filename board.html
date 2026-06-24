@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Teal PMS — Board</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/></head>
+<body>
+<script src="js/data.js"></script><script src="js/common.js"></script>
+<script>seedDemoData(); buildNav('board');</script>
+<div class="main-content">
+  <div class="page-header">
+    <div><div class="page-title">📋 Kanban Board</div><div class="page-sub" id="board-sub"></div></div>
+    <div class="page-header-actions">
+      <select class="form-control" id="f-epic" onchange="render()" style="max-width:200px"><option value="">All Epics</option></select>
+      <select class="form-control" id="f-type" onchange="render()" style="max-width:140px"><option value="">All Types</option><option>Task</option><option>Bug</option><option>Feature</option><option>Story</option><option>Improvement</option></select>
+      <a href="tickets.html" class="btn btn-primary btn-sm">+ Ticket</a>
+    </div>
+  </div>
+  <div class="kanban-wrap" id="kanban-wrap"></div>
+</div>
+<script>
+const COLS = ['Backlog','Todo','In Progress','Review','Done','Blocked'];
+const COL_COLORS = {'Backlog':'#8b949e','Todo':'#58a6ff','In Progress':'#e3b341','Review':'#bc8cff','Done':'#3fb950','Blocked':'#f85149'};
+const proj = getActiveProject();
+document.getElementById('board-sub').textContent = proj?.name || '';
+const epics = proj ? getEpicsByProject(proj.id) : [];
+const epicSel = document.getElementById('f-epic');
+epics.forEach(e => { const o=document.createElement('option'); o.value=e.id; o.textContent=e.name; epicSel.appendChild(o); });
+
+let dragging = null;
+
+function render() {
+  const fe = document.getElementById('f-epic').value;
+  const ft = document.getElementById('f-type').value;
+  const tickets = (proj ? getTicketsByProject(proj.id) : []).filter(t =>
+    t.type !== 'Epic' && (!fe || t.epicId === fe) && (!ft || t.type === ft)
+  );
+  const wrap = document.getElementById('kanban-wrap');
+  wrap.innerHTML = COLS.map(col => {
+    const cards = tickets.filter(t => t.status === col);
+    return `<div class="kanban-col" data-col="${col}" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="drop(event,'${col}')">
+      <div class="kanban-col-header">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${COL_COLORS[col]};display:inline-block"></span>${col}</span>
+        <span class="col-count">${cards.length}</span>
+      </div>
+      <div class="kanban-col-body">${cards.map(t => `
+        <div class="ticket-card" draggable="true" data-id="${t.id}" ondragstart="drag(event)">
+          <div class="ticket-card-top">${typeBadge(t.type)}${priorityBadge(t.priority)}</div>
+          <div class="ticket-card-title">${t.title}</div>
+          ${t.labels?.length ? `<div style="margin-bottom:6px">${t.labels.slice(0,2).map(l=>`<span class="label-chip" style="font-size:10px">${l}</span>`).join('')}</div>` : ''}
+          <div class="ticket-card-meta">
+            <span class="ticket-card-key">${t.key}</span>
+            ${renderAvatars(t.assignees, 2)}
+          </div>
+          ${t.dueDate ? `<div style="font-size:10px;color:${new Date(t.dueDate)<new Date()&&col!=='Done'?'var(--fail)':'var(--text-muted)'};margin-top:4px">📅 ${fmtDate(t.dueDate)}</div>` : ''}
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+function drag(e) { dragging = e.currentTarget.dataset.id; e.currentTarget.classList.add('dragging'); }
+function drop(e, col) {
+  e.preventDefault();
+  document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+  if (!dragging) return;
+  const patch = { status: col };
+  if (col === 'Done') { patch.pctComplete = 100; }
+  updateTicket(dragging, patch); dragging = null; render(); toast(`Moved to ${col}`);
+}
+render();
+</script>
+</body></html>

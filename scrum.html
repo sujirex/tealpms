@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Teal PMS — Sprints</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/></head>
+<body>
+<script src="js/data.js"></script><script src="js/common.js"></script>
+<script>seedDemoData(); buildNav('scrum');</script>
+<div class="main-content">
+  <div class="page-header">
+    <div><div class="page-title">🔄 Sprint Board</div><div class="page-sub">Sprint planning and tracking</div></div>
+    <div class="page-header-actions">
+      <select class="form-control" id="sprint-sel" onchange="switchSprint()" style="max-width:260px"></select>
+    </div>
+  </div>
+  <div id="sprint-info"></div>
+  <div class="kanban-wrap" id="sprint-board"></div>
+  <div style="margin-top:24px" id="backlog-section"></div>
+</div>
+<script>
+const SPRINT_COLS = ['Todo','In Progress','Review','Done'];
+const SPRINT_COLORS = {'Todo':'#58a6ff','In Progress':'#e3b341','Review':'#bc8cff','Done':'#3fb950'};
+const proj = getActiveProject();
+const sprints = proj ? getSprintsByProject(proj.id) : [];
+
+const sel = document.getElementById('sprint-sel');
+sprints.forEach(s => { const o=document.createElement('option'); o.value=s.id; o.textContent=`${s.name} [${s.status}]`; if(s.status==='Active') o.selected=true; sel.appendChild(o); });
+
+let dragging = null;
+
+function switchSprint() { renderSprint(sel.value); }
+function renderSprint(sprintId) {
+  const sprint = getSprint(sprintId); if(!sprint) return;
+  const allTickets = proj ? getTicketsByProject(proj.id) : [];
+  const spTickets = allTickets.filter(t => t.sprintId === sprintId);
+  const done = spTickets.filter(t => t.status === 'Done').length;
+  const pct = spTickets.length ? Math.round(done/spTickets.length*100) : 0;
+
+  document.getElementById('sprint-info').innerHTML = `<div class="sprint-header">
+    <div><div class="sprint-name">${sprint.name}</div><div class="sprint-dates">📅 ${fmtDate(sprint.startDate)} → ${fmtDate(sprint.endDate)}</div>
+    ${sprint.goal?`<div style="font-size:12px;color:var(--text-muted);margin-top:4px">🎯 ${sprint.goal}</div>`:''}
+    </div>
+    <span class="badge ${sprint.status==='Active'?'badge-progress':sprint.status==='Completed'?'badge-done':'badge-backlog'}">${sprint.status}</span>
+    <div class="sprint-meta">
+      <div class="sprint-stat"><div class="sprint-stat-value">${spTickets.length}</div><div class="sprint-stat-label">Total</div></div>
+      <div class="sprint-stat"><div class="sprint-stat-value" style="color:var(--pass)">${done}</div><div class="sprint-stat-label">Done</div></div>
+      <div class="sprint-stat"><div class="sprint-stat-value">${pct}%</div><div class="sprint-stat-label">Complete</div></div>
+    </div>
+  </div>`;
+
+  document.getElementById('sprint-board').innerHTML = SPRINT_COLS.map(col => {
+    const cards = spTickets.filter(t => t.status === col || (col==='Todo' && t.status==='Backlog'));
+    return `<div class="kanban-col" data-col="${col}" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="drop(event,'${col}','${sprintId}')">
+      <div class="kanban-col-header"><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${SPRINT_COLORS[col]};display:inline-block"></span>${col}</span><span class="col-count">${cards.length}</span></div>
+      <div class="kanban-col-body">${cards.map(t=>`<div class="ticket-card" draggable="true" data-id="${t.id}" ondragstart="drag(event)">
+        <div class="ticket-card-top">${typeBadge(t.type)}${priorityBadge(t.priority)}</div>
+        <div class="ticket-card-title">${t.title}</div>
+        <div class="ticket-card-meta"><span class="ticket-card-key">${t.key}</span>${renderAvatars(t.assignees,2)}</div>
+        ${t.estimatedHours?`<div style="font-size:10px;color:var(--text-muted);margin-top:4px">Est: ${t.estimatedHours}h · Logged: ${t.loggedHours||0}h</div>`:''}
+      </div>`).join('')}</div>
+    </div>`;
+  }).join('');
+
+  // Backlog for sprint planning
+  const backlog = allTickets.filter(t => !t.sprintId && t.status === 'Backlog').slice(0,10);
+  document.getElementById('backlog-section').innerHTML = `<div class="card"><div class="card-header"><div class="card-title">📦 Backlog — Add to Sprint</div><span style="font-size:12px;color:var(--text-muted)">${backlog.length} tickets</span></div><div class="table-wrap"><table><thead><tr><th>Key</th><th>Title</th><th>Priority</th><th>Action</th></tr></thead><tbody>${backlog.map(t=>`<tr><td><span class="ticket-key">${t.key}</span></td><td>${t.title}</td><td>${priorityBadge(t.priority)}</td><td><button class="btn btn-outline btn-sm" onclick="addToSprint('${t.id}','${sprintId}')">Add →</button></td></tr>`).join('')}</tbody></table></div></div>`;
+}
+
+function drag(e) { dragging = e.currentTarget.dataset.id; }
+function drop(e, col, sprintId) {
+  e.preventDefault();
+  document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+  if (!dragging) return;
+  updateTicket(dragging, { status: col === 'Todo' ? 'Todo' : col, sprintId, pctComplete: col==='Done'?100:undefined });
+  dragging = null; renderSprint(sprintId);
+}
+function addToSprint(ticketId, sprintId) {
+  updateTicket(ticketId, { sprintId, status: 'Todo' });
+  renderSprint(sprintId); toast('Added to sprint ✓');
+}
+
+if (sprints.length) { const active = sprints.find(s=>s.status==='Active') || sprints[0]; sel.value=active.id; renderSprint(active.id); }
+else document.getElementById('sprint-info').innerHTML = '<p style="color:var(--text-muted)">No sprints yet. Create sprints from the Projects page.</p>';
+</script>
+</body></html>

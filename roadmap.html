@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Teal PMS — Roadmap</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/></head>
+<body>
+<script src="js/data.js"></script><script src="js/common.js"></script>
+<script>seedDemoData(); buildNav('roadmap');</script>
+<div class="main-content">
+  <div class="page-header">
+    <div><div class="page-title">🗺️ Roadmap & Epics</div><div class="page-sub">Epic progress and milestone timeline</div></div>
+    <button class="btn btn-primary btn-sm" onclick="openNewEpic()">+ Epic</button>
+  </div>
+  <div id="epics-list"></div>
+  <div style="margin-top:28px"><div class="page-title" style="font-size:16px;margin-bottom:14px">🏁 Milestones</div><div id="milestones-list"></div></div>
+</div>
+<div class="modal-overlay" id="epic-modal">
+  <div class="modal"><div class="modal-header"><span class="modal-title">New Epic</span><button class="modal-close" onclick="closeEpicModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="form-group"><label>Epic Name *</label><input class="form-control" id="ep-name" placeholder="e.g. User Authentication"/></div>
+    <div class="form-group"><label>Description</label><textarea class="form-control" id="ep-desc" rows="2"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Status</label><select class="form-control" id="ep-status"><option>Todo</option><option>In Progress</option><option>Done</option></select></div>
+      <div class="form-group"><label>Color</label><input class="form-control" type="color" id="ep-color" value="#0DC8C8"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Start</label><input class="form-control" type="date" id="ep-start"/></div>
+      <div class="form-group"><label>End</label><input class="form-control" type="date" id="ep-end"/></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeEpicModal()">Cancel</button><button class="btn btn-primary" onclick="saveEpic()">Save</button></div>
+  </div>
+</div>
+<script>
+const proj = getActiveProject();
+function render() {
+  const epics = proj ? getEpicsByProject(proj.id) : [];
+  const tickets = proj ? getTicketsByProject(proj.id) : [];
+  document.getElementById('epics-list').innerHTML = epics.length ? epics.map(e => {
+    const et = tickets.filter(t => t.epicId === e.id);
+    const done = et.filter(t => t.status === 'Done').length;
+    const pct = et.length ? Math.round(done/et.length*100) : 0;
+    return `<div class="roadmap-epic">
+      <div class="roadmap-epic-header">
+        <div class="epic-color-dot" style="background:${e.color}"></div>
+        <div style="flex:1"><div class="epic-name">${e.name}</div><div class="epic-meta">${fmtDate(e.startDate)} → ${fmtDate(e.dueDate)}</div></div>
+        <div class="epic-progress">${progressBar(pct)}<span style="font-size:10px;color:var(--text-muted)">${pct}% · ${done}/${et.length}</span></div>
+        ${statusBadge(e.status)}
+      </div>
+      ${et.length ? `<div class="roadmap-epic-tickets"><div class="table-wrap"><table><thead><tr><th>Key</th><th>Title</th><th>Status</th><th>Priority</th><th>Assignee</th></tr></thead><tbody>${et.slice(0,8).map(t=>`<tr><td><span class="ticket-key">${t.key}</span></td><td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</td><td>${statusBadge(t.status)}</td><td>${priorityBadge(t.priority)}</td><td>${renderAvatars(t.assignees,1)}</td></tr>`).join('')}${et.length>8?`<tr><td colspan="5" style="color:var(--text-muted);font-size:12px;text-align:center">+${et.length-8} more</td></tr>`:''}</tbody></table></div></div>` : ''}
+    </div>`;
+  }).join('') : '<div class="card card-body" style="color:var(--text-muted)">No epics yet. Create your first epic to plan your roadmap.</div>';
+
+  const ms = getMilestonesByProject(proj?.id||'');
+  document.getElementById('milestones-list').innerHTML = ms.length ? `<div class="card"><div class="card-body">${ms.map(m=>{
+    const d = daysFrom(m.date);
+    const col = m.status==='Completed'?'var(--pass)':d!==null&&d<0?'var(--fail)':'var(--teal-br)';
+    return `<div style="display:flex;align-items:flex-start;gap:16px;padding:12px 0;border-bottom:1px solid var(--border-dim)">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div style="width:14px;height:14px;background:${col};border-radius:3px;transform:rotate(45deg)"></div>
+        <div style="width:1px;height:24px;background:var(--border)"></div>
+      </div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${m.name}</div>
+        <div style="font-size:12px;color:var(--text-muted)">${m.description||''}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:500">${fmtDate(m.date)}</div>
+        ${d!==null?`<div style="font-size:11px;color:${col}">${d<0?`${Math.abs(d)}d overdue`:d===0?'Today':`${d}d remaining`}</div>`:''}
+      </div>
+      ${statusBadge(m.status)}
+    </div>`;
+  }).join('')}</div></div>` : '<p style="color:var(--text-muted)">No milestones defined.</p>';
+}
+function openNewEpic() { document.getElementById('epic-modal').classList.add('open'); }
+function closeEpicModal() { document.getElementById('epic-modal').classList.remove('open'); }
+function saveEpic() {
+  const name = document.getElementById('ep-name').value.trim(); if(!name){toast('Name required','fail');return;}
+  createEpic({ projectId:proj?.id, name, description:document.getElementById('ep-desc').value, status:document.getElementById('ep-status').value, color:document.getElementById('ep-color').value, startDate:document.getElementById('ep-start').value, dueDate:document.getElementById('ep-end').value });
+  closeEpicModal(); render(); toast('Epic created ✓');
+}
+render();
+</script>
+</body></html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Teal PMS — Reports</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script></head>
+<body>
+<script src="js/data.js"></script><script src="js/common.js"></script>
+<script>seedDemoData(); buildNav('reports');</script>
+<div class="main-content">
+  <div class="page-header">
+    <div><div class="page-title">📊 Reports & Analytics</div><div class="page-sub">Project health, workload, and progress insights</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="exportData()">💾 Backup JSON</button>
+    </div>
+  </div>
+
+  <div class="grid-4" style="margin-bottom:24px" id="summary-tiles"></div>
+
+  <div class="grid-2" style="margin-bottom:24px">
+    <div class="card card-body"><div style="font-weight:600;margin-bottom:12px">Ticket Status</div><div class="chart-wrap"><canvas id="statusChart"></canvas></div></div>
+    <div class="card card-body"><div style="font-weight:600;margin-bottom:12px">Priority Breakdown</div><div class="chart-wrap"><canvas id="priorityChart"></canvas></div></div>
+  </div>
+
+  <div class="card card-body" style="margin-bottom:24px"><div style="font-weight:600;margin-bottom:12px">Tickets by Type</div><div class="chart-wrap" style="max-height:220px"><canvas id="typeChart"></canvas></div></div>
+
+  <div class="card card-body" style="margin-bottom:24px"><div style="font-weight:600;margin-bottom:12px">Assignee Workload</div><div class="chart-wrap" style="max-height:280px"><canvas id="workloadChart"></canvas></div></div>
+
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0"><span style="font-weight:600">🔴 Overdue Tickets</span><span id="overdue-count" class="badge badge-critical"></span></div>
+    <div id="overdue-table"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0"><span style="font-weight:600">Sprint Velocity</span></div>
+    <div class="card-body" id="sprint-table"></div>
+  </div>
+</div>
+
+<script>
+const proj = getActiveProject();
+const tickets = proj ? getTicketsByProject(proj.id) : [];
+const team = getTeam();
+const sprints = proj ? getSprintsByProject(proj.id) : [];
+
+const TEAL='#0DC8C8', TEAL2='#0A9696', WARN='#f59e0b', FAIL='#ef4444', PASS='#10b981';
+const textColor = () => getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#aaa';
+
+// Summary tiles
+const done=tickets.filter(t=>t.status==='Done').length;
+const blocked=tickets.filter(t=>t.status==='Blocked').length;
+const overdue=tickets.filter(t=>t.dueDate && new Date(t.dueDate)<new Date() && t.status!=='Done').length;
+const pct=tickets.length?Math.round(done/tickets.length*100):0;
+document.getElementById('summary-tiles').innerHTML = [
+  {label:'Total Tickets',val:tickets.length,icon:'🎫',col:'var(--teal)'},
+  {label:'Completed',val:`${done} (${pct}%)`,icon:'✅',col:'var(--pass)'},
+  {label:'Overdue',val:overdue,icon:'⚠️',col:'var(--fail)'},
+  {label:'Blocked',val:blocked,icon:'🚫',col:'#f59e0b'},
+].map(s=>`<div class="stat-tile"><div class="stat-icon" style="color:${s.col}">${s.icon}</div><div class="stat-val" style="color:${s.col}">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+
+// Charts
+const statusGroups = ['Backlog','Todo','In Progress','Review','Done','Blocked'];
+const statusCounts = statusGroups.map(s=>tickets.filter(t=>t.status===s).length);
+new Chart(document.getElementById('statusChart'),{type:'doughnut',data:{labels:statusGroups,datasets:[{data:statusCounts,backgroundColor:['#374151','#60a5fa',TEAL,WARN,PASS,FAIL],borderWidth:0}]},options:{plugins:{legend:{labels:{color:textColor(),boxWidth:12}}},cutout:'65%'}});
+
+const prioGroups=['Critical','High','Medium','Low'];
+const prioCounts=prioGroups.map(p=>tickets.filter(t=>t.priority===p).length);
+new Chart(document.getElementById('priorityChart'),{type:'doughnut',data:{labels:prioGroups,datasets:[{data:prioCounts,backgroundColor:[FAIL,WARN,TEAL,'#60a5fa'],borderWidth:0}]},options:{plugins:{legend:{labels:{color:textColor(),boxWidth:12}}},cutout:'65%'}});
+
+const typeGroups=['Task','Bug','Feature','Story','Improvement','Epic'];
+const typeCounts=typeGroups.map(tp=>tickets.filter(t=>t.type===tp).length);
+new Chart(document.getElementById('typeChart'),{type:'bar',data:{labels:typeGroups,datasets:[{data:typeCounts,backgroundColor:[TEAL,FAIL,'#60a5fa',WARN,PASS,'#8b5cf6'],borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:textColor()}},y:{ticks:{color:textColor(),stepSize:1},grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+const assigneeCounts={};
+tickets.forEach(t=>(t.assignees||[]).forEach(a=>{assigneeCounts[a]=(assigneeCounts[a]||0)+1;}));
+const topAssignees=Object.entries(assigneeCounts).sort((a,b)=>b[1]-a[1]).slice(0,12);
+new Chart(document.getElementById('workloadChart'),{type:'bar',data:{labels:topAssignees.map(a=>a[0]),datasets:[{data:topAssignees.map(a=>a[1]),backgroundColor:TEAL+'99',borderColor:TEAL,borderWidth:2,borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:textColor(),stepSize:1},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:textColor()}}}}});
+
+// Overdue table
+const overdueList=tickets.filter(t=>t.dueDate&&new Date(t.dueDate)<new Date()&&t.status!=='Done').sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
+document.getElementById('overdue-count').textContent=overdueList.length;
+document.getElementById('overdue-table').innerHTML=overdueList.length?`<div class="table-wrap"><table><thead><tr><th>Key</th><th>Title</th><th>Priority</th><th>Due</th><th>Assignees</th><th>Status</th></tr></thead><tbody>${overdueList.map(t=>{const d=Math.ceil((new Date()-new Date(t.dueDate))/(86400000));return`<tr><td><span class="ticket-key">${t.key}</span></td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</td><td>${priorityBadge(t.priority)}</td><td style="color:var(--fail)">${fmtDate(t.dueDate)} <small>(${d}d)</small></td><td>${renderAvatars(t.assignees,2)}</td><td>${statusBadge(t.status)}</td></tr>`;}).join('')}</tbody></table></div>`:'<div style="padding:16px 20px;color:var(--pass)">🎉 No overdue tickets!</div>';
+
+// Sprint velocity
+document.getElementById('sprint-table').innerHTML=sprints.length?sprints.map(s=>{const st=tickets.filter(t=>t.sprintId===s.id);const sd=st.filter(t=>t.status==='Done').length;return`<div style="display:flex;align-items:center;gap:16px;padding:10px 0;border-bottom:1px solid var(--border-dim)"><div style="flex:1"><div style="font-weight:600;font-size:13px">${s.name}</div><div style="font-size:11px;color:var(--text-muted)">${fmtDate(s.startDate)} → ${fmtDate(s.endDate)}</div></div><div style="width:160px">${progressBar(st.length?Math.round(sd/st.length*100):0)}</div><div style="font-size:12px;color:var(--text-muted)">${sd}/${st.length}</div>${statusBadge(s.status)}</div>`;}).join(''):'<p style="color:var(--text-muted)">No sprints defined.</p>';
+
+function exportCSV() {
+  const rows=[['Key','Title','Type','Status','Priority','Assignees','Epic','Sprint','Due Date'],...tickets.map(t=>[t.key,`"${t.title.replace(/"/g,'""')}"`,t.type,t.status,t.priority,(t.assignees||[]).join(';'),'','',t.dueDate||''])];
+  const blob=new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='teal-pms-export.csv';a.click();
+}
+</script>
+</body></html>
