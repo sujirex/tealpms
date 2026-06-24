@@ -205,7 +205,7 @@ function buildNav(activeKey) {
           <rect x="5" y="14" width="15" height="3.5" rx="1.75" fill="#0a0a0a" opacity=".8"/>
           <rect x="5" y="21" width="19" height="3.5" rx="1.75" fill="#0a0a0a" opacity=".9"/>
         </svg>
-        <div class="sidebar-logo-text">Teal<span>PMS</span></div>
+        <div class="sidebar-logo-text"><span>Teal</span>PMS</div>
       </div>
       ${proj ? `
       <div class="sidebar-project" onclick="window.location='projects.html'">
@@ -225,7 +225,7 @@ function buildNav(activeKey) {
         <div class="topbar-breadcrumb">Teal PMS &nbsp;/&nbsp; <strong>${pageName}</strong></div>
       </div>
       <div class="topbar-actions">
-        ${proj ? `<span style="font-size:11px;color:var(--primary);background:var(--primary-bg);padding:3px 10px;border:1px solid rgba(245,158,11,.25);border-radius:20px;font-weight:600">${proj.key}</span>` : ''}
+        ${proj ? `<span style="font-size:11px;color:var(--teal,#0DC8C8);background:rgba(13,200,200,.1);padding:3px 10px;border:1px solid rgba(13,200,200,.25);border-radius:20px;font-weight:700;letter-spacing:.5px">${proj.key}</span>` : ''}
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">${navIcon('moon')}</button>
       </div>
     </div>

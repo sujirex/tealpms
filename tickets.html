@@ -100,7 +100,7 @@
 </div>
 <script>
 const proj = getActiveProject();
-document.getElementById('ticket-sub').textContent = proj ? `${proj.name} (${proj.key}) · ${calcProjectStats(proj.id).total} tickets` : '';
+document.getElementById('ticket-sub').textContent = proj ? `${proj.name} (${proj.key}) · ${getTicketsByProject(proj.id).length} tickets` : '';
 
 // Populate epic filter
 const epics = proj ? getEpicsByProject(proj.id) : [];

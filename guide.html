@@ -7,122 +7,174 @@
 <script>seedDemoData(); buildNav('guide');</script>
 <div class="main-content">
   <div class="page-header">
-    <div><div class="page-title">📖 User Guide</div><div class="page-sub">Everything you need to get started with Teal PMS</div></div>
+    <div>
+      <div class="page-title">User Guide</div>
+      <div class="page-sub">Everything you need to know about Teal PMS</div>
+    </div>
   </div>
   <div class="guide-layout">
+
+    <!-- TOC -->
     <div class="guide-toc card card-sm">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:10px">Contents</div>
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin-bottom:10px">Contents</div>
       <a href="#overview">Overview</a>
       <a href="#getting-started">Getting Started</a>
       <a href="#projects">Projects</a>
       <a href="#tickets">Tickets</a>
       <a href="#board">Kanban Board</a>
-      <a href="#scrum">Scrum / Sprints</a>
-      <a href="#roadmap">Roadmap & Epics</a>
-      <a href="#team">Team & Workload</a>
+      <a href="#scrum">Sprints</a>
+      <a href="#gantt">Gantt Chart</a>
+      <a href="#roadmap">Roadmap &amp; Epics</a>
+      <a href="#team">Team</a>
       <a href="#reports">Reports</a>
       <a href="#import">Importing Data</a>
-      <a href="#data">Data & Backup</a>
+      <a href="#data">Data &amp; Backup</a>
     </div>
 
+    <!-- Content -->
     <div>
+
+      <!-- Overview -->
       <div class="guide-section" id="overview">
         <h2>Overview</h2>
-        <p>Teal PMS is a full-featured project management tool that runs entirely in your browser — no server, no login, no subscription. It's inspired by Jira, Asana, and Zoho Projects, and supports epics, sprints, kanban boards, roadmaps, team workload, and rich reporting. You can import data from Zoho, Jira, Trello, and Asana, or start fresh with the built-in demo data.</p>
-        <div class="tip">💡 All data is stored in your browser's localStorage. Nothing leaves your device. Use the JSON backup feature regularly to preserve your work.</div>
+        <p>Teal PMS is a full-featured, browser-based project management tool — no server, no account, no subscription. It runs entirely in your browser using localStorage and works offline once loaded.</p>
+        <p>It is built for small-to-medium software and engineering teams and covers the full project lifecycle: ticket backlog, kanban board, sprint planning, gantt timeline, roadmap with epics, team workload, and analytical reports.</p>
+        <p>The live demo is at <strong>tealpms.pages.dev</strong> and comes pre-loaded with three sample projects (ALPHA, BETA, GAMMA) so you can explore every feature immediately.</p>
+        <div class="tip">All your data lives in the browser's localStorage. Nothing is sent to any server. Use <strong>Reports → Backup JSON</strong> regularly so you never lose work.</div>
       </div>
 
+      <!-- Getting Started -->
       <div class="guide-section" id="getting-started">
         <h2>Getting Started</h2>
-        <h3>First Launch</h3>
-        <p>On first launch, Teal PMS seeds three sample projects (ALPHA, BETA, GAMMA) with tickets, epics, and sprints so you can explore immediately. Head to the <strong>Dashboard</strong> to see the overview, or jump straight to <strong>Tickets</strong> or <strong>Board</strong>.</p>
+        <h3>Demo Data</h3>
+        <p>On first load, Teal PMS automatically seeds three demo projects with 35+ tickets, epics, sprints, milestones, and team members. You can explore everything immediately without any setup.</p>
         <h3>Switching Projects</h3>
-        <p>Go to <strong>Projects</strong> and click <strong>Set Active</strong> on any project. All views (tickets, board, scrum, roadmap, reports) filter to the active project automatically.</p>
+        <p>Go to <strong>Projects</strong> in the sidebar and click <strong>Set Active</strong> on any project. All views — Tickets, Board, Sprints, Gantt, Roadmap, Reports — filter to the active project automatically. The active project key (e.g. <code>ALPHA</code>) is shown in the topbar.</p>
         <h3>Dark / Light Mode</h3>
-        <p>Click the 🌓 toggle in the top right of any page to switch themes. Your preference is saved automatically.</p>
+        <p>Click <strong>Toggle Theme</strong> at the bottom of the sidebar (or the moon icon in the topbar) to switch between dark and light mode. Your preference is saved to localStorage automatically.</p>
+        <h3>Clearing Demo Data</h3>
+        <p>To start fresh with your own data, go to <strong>Import</strong> and upload a Teal PMS JSON backup, or clear your browser's localStorage for this site and reload. The demo seed will not re-appear once you have your own data loaded.</p>
       </div>
 
+      <!-- Projects -->
       <div class="guide-section" id="projects">
         <h2>Projects</h2>
-        <p>Each project has a name, key (used as a prefix for ticket IDs, e.g. ALPHA-001), description, start date, and due date. Create as many projects as you need — each one is independent with its own tickets, epics, sprints, and milestones.</p>
-        <p>Click <strong>+ New Project</strong> to create one. Click the card's menu to edit or delete. Click <strong>Set Active</strong> to make a project the current focus.</p>
+        <p>Each project has a name, short key (used as the ticket prefix, e.g. <code>ALPHA-1</code>), description, start date, due date, category, and owner. Create as many projects as you need — each is independent with its own tickets, epics, sprints, milestones, and team.</p>
+        <p>On the Projects page, click <strong>+ New Project</strong> to create one. Click a project card to see its summary. Click <strong>Set Active</strong> to make a project the current working context for all other views.</p>
+        <p>The demo includes three projects: <strong>Project Alpha</strong> (software platform), <strong>Project Beta</strong> (marketing website), and <strong>Project Gamma</strong> (cloud infrastructure).</p>
+        <div class="tip">All tickets, charts, and reports automatically filter to whichever project is active. Switch freely — data for all projects is kept in localStorage simultaneously.</div>
       </div>
 
+      <!-- Tickets -->
       <div class="guide-section" id="tickets">
         <h2>Tickets</h2>
         <h3>Ticket Types</h3>
-        <p>Teal PMS supports six ticket types: Task, Bug, Feature, Story, Improvement, and Epic. Each has its own color badge. Use types to categorize work — bugs for defects, features for new functionality, stories for user-facing requirements.</p>
+        <p>Six types are supported: <strong>Task</strong>, <strong>Bug</strong>, <strong>Feature</strong>, <strong>Story</strong>, <strong>Improvement</strong>, and <strong>Epic</strong>. Each has a distinct color badge. Use types to categorize work — Bugs for defects, Features for new functionality, Stories for user requirements, Improvements for enhancements.</p>
         <h3>Statuses</h3>
-        <p>Tickets flow through six statuses: Backlog → Todo → In Progress → Review → Done, plus Blocked for stalled items. Move tickets forward from the detail modal or by dragging on the Kanban board.</p>
+        <p>Tickets move through six statuses: <strong>Backlog → Todo → In Progress → Review → Done</strong>, plus <strong>Blocked</strong> for stalled items. You can change status from the ticket detail modal, the Kanban board (drag-and-drop), or the Sprint board.</p>
         <h3>Priorities</h3>
-        <p>Four priority levels: Critical (red), High (orange), Medium (teal), Low (blue). Set priority when creating or editing a ticket.</p>
-        <h3>Filters & Search</h3>
-        <p>Use the filter bar on the Tickets page to narrow by Status, Type, Priority, Epic, or Sprint. The search box matches ticket title and key. All filters combine — e.g. "Bug + Critical + In Progress" to find your top blockers.</p>
+        <p>Four priority levels: <strong>Critical</strong> (red), <strong>High</strong> (orange), <strong>Medium</strong> (teal), and <strong>Low</strong> (grey). Overdue critical/high tickets show in red on the Tickets page.</p>
+        <h3>Filters &amp; Search</h3>
+        <p>Use the filter bar to narrow by Status, Type, Priority, or Epic. The search box matches against ticket title and key. All filters combine — for example, "Bug + Critical + In Progress" shows only your highest-priority active defects.</p>
         <h3>Ticket Detail</h3>
-        <p>Click any ticket to open the detail modal. Edit any field inline: title, description, status, type, priority, assignees, dates, labels, epic, sprint. Add timed comments. Log time spent with the + button in the Time Log section.</p>
-        <div class="tip">💡 Link a ticket to an epic and sprint to have it show up on the Roadmap and Scrum boards.</div>
+        <p>Click any ticket row to open the full detail modal. From here you can edit every field: title, description, status, type, priority, assignees, start/due dates, labels, epic, percentage complete, and estimated hours. You can also add comments and log time spent.</p>
+        <div class="tip">Tickets with a due date in the past and status not Done show in red in the Due column and count toward the overdue badge on the sidebar.</div>
       </div>
 
+      <!-- Board -->
       <div class="guide-section" id="board">
         <h2>Kanban Board</h2>
-        <p>The Board gives a visual drag-and-drop interface across six columns: Backlog, Todo, In Progress, Review, Done, and Blocked. Drag any card to change its status instantly.</p>
-        <p>Filter by Epic or Type using the dropdowns at the top. Each card shows ticket key, title, type badge, priority dot, and assignee avatars.</p>
-        <div class="tip">💡 Dropping a card into Done automatically closes it — no need to open the detail modal.</div>
+        <p>The Board page shows all tickets for the active project arranged in six columns: <strong>Backlog, Todo, In Progress, Review, Done, Blocked</strong>. Drag any card left or right to change its status instantly — no modal required.</p>
+        <p>Filter cards by Epic or Type using the dropdowns at the top. Each card shows the ticket key, title, type badge, priority, and assignee avatars. Click a card to open the full detail modal.</p>
+        <div class="tip">Dragging a card to the Done column marks it as completed. For blocked tickets, drag to the Blocked column to flag them for the team.</div>
       </div>
 
+      <!-- Scrum -->
       <div class="guide-section" id="scrum">
-        <h2>Scrum / Sprints</h2>
-        <p>The Scrum view shows one sprint at a time with four columns: Todo, In Progress, Review, Done. Select the active sprint from the dropdown at the top.</p>
-        <h3>Sprint Planning</h3>
-        <p>The Backlog section at the bottom shows all tickets not yet assigned to a sprint. Click <strong>Add to Sprint</strong> on any backlog ticket to include it in the current sprint. Use this for sprint planning sessions.</p>
+        <h2>Sprints (Scrum)</h2>
+        <p>The Sprints page shows a two-zone view: the active sprint board at the top and the ticket backlog at the bottom.</p>
+        <h3>Sprint Board</h3>
+        <p>Select any sprint from the dropdown. The board displays sprint tickets across four columns: <strong>Todo, In Progress, Review, Done</strong>. Progress bar and velocity stats are shown above the board.</p>
+        <h3>Backlog &amp; Sprint Planning</h3>
+        <p>The backlog section shows all tickets not yet assigned to any sprint. Click <strong>Add to Sprint</strong> on any backlog ticket to include it in the selected sprint — this is your sprint planning interface.</p>
         <h3>Creating Sprints</h3>
-        <p>Go to <strong>Projects</strong> → open a project → create sprints there, or use the sprint modal on the Scrum page (coming in v2).</p>
+        <p>Click <strong>+ New Sprint</strong> on the Sprints page to create a new sprint with a name, goal, start date, and end date. Sprints belong to the active project.</p>
+        <p>The demo includes completed sprints (Sprint 1, Sprint 2) and an active sprint (Sprint 3) for Project Alpha, plus two sprints for Project Beta.</p>
       </div>
 
+      <!-- Gantt -->
+      <div class="guide-section" id="gantt">
+        <h2>Gantt Chart</h2>
+        <p>The Gantt page visualizes all tickets for the active project as horizontal time bars across a calendar timeline. It gives you an instant view of schedule, overlaps, and critical path.</p>
+        <h3>Zoom Levels</h3>
+        <p>Three zoom levels are available from the dropdown: <strong>Month</strong> (24 px/day, best for multi-month plans), <strong>Week</strong> (40 px/day, best for sprint detail), and <strong>Quarter</strong> (14 px/day, best for yearly overview).</p>
+        <h3>Grouping</h3>
+        <p>Group bars by <strong>Epic</strong>, <strong>Status</strong>, or view all tickets ungrouped. Tickets within each group are sorted by start date.</p>
+        <h3>Today Line &amp; Milestones</h3>
+        <p>A teal vertical line marks today's date. Diamond markers on the timeline represent project milestones. Hover any bar or milestone to see a tooltip with ticket details, dates, and status.</p>
+        <h3>Navigation</h3>
+        <p>Click <strong>Today</strong> to scroll the timeline back to the current date. The timeline scrolls horizontally — use your mouse wheel or trackpad.</p>
+      </div>
+
+      <!-- Roadmap -->
       <div class="guide-section" id="roadmap">
-        <h2>Roadmap & Epics</h2>
-        <p>The Roadmap shows all epics for the active project with progress bars, date ranges, and associated tickets. Each epic has a color, status (Todo / In Progress / Done), start date, and end date.</p>
-        <p>Click <strong>+ Epic</strong> to create new epics. Link tickets to epics from the ticket detail modal's Epic dropdown. The roadmap updates progress in real time as tickets are moved to Done.</p>
-        <p>The Milestones panel below shows key project gates — deadlines, checkpoints, and deliverables. Create milestones from the Projects page.</p>
+        <h2>Roadmap &amp; Epics</h2>
+        <p>The Roadmap page shows all epics for the active project. Each epic displays its color, name, status badge, date range, progress bar (calculated from how many linked tickets are Done), and the list of associated tickets.</p>
+        <p>Click <strong>+ New Epic</strong> to create an epic with a name, color, status, start date, and end date. Link tickets to an epic from the ticket detail modal's Epic dropdown — the roadmap progress bar updates automatically as tickets are completed.</p>
+        <p>Milestones are shown below the epics — key dates like releases, design sign-offs, or go-live events. Create milestones from the Projects page.</p>
+        <div class="tip">Epics are the parent grouping layer above tickets. Use epics for major themes like "User Authentication" or "Dashboard & Analytics" and add individual Feature/Task tickets inside each epic.</div>
       </div>
 
+      <!-- Team -->
       <div class="guide-section" id="team">
-        <h2>Team & Workload</h2>
-        <p>The Team page shows all team members with their role, department, and workload relative to the active project. Filter by department using the chips at the top.</p>
-        <p>Each member card shows how many tickets they're assigned to and how many are still open. The workload bar shows relative load compared to the rest of the team — useful for spotting overloaded members.</p>
-        <div class="tip">💡 Add team members from Settings (coming in v2). For now, assignee names are drawn from whoever you assign tickets to.</div>
+        <h2>Team</h2>
+        <p>The Team page shows all members defined in the active project's team roster. Filter by department using the chip filters at the top.</p>
+        <p>Each member card shows their name, role, department, avatar, and workload stats: total tickets assigned, open tickets, and a workload bar showing their relative load compared to the rest of the team. This makes it easy to spot overloaded members before assigning new work.</p>
+        <p>The demo includes 12 team members across Engineering, Design, QA, Management, Infrastructure, Analytics, and Marketing departments (User1 through User12 — generic names to protect confidentiality).</p>
+        <div class="tip">Assignees are set per-ticket in the ticket detail modal (comma-separated names). The Team page reads from the team roster in the project data and matches assignee names automatically.</div>
       </div>
 
+      <!-- Reports -->
       <div class="guide-section" id="reports">
         <h2>Reports</h2>
-        <p>The Reports page provides analytical charts: Status doughnut, Priority doughnut, Tickets by Type bar chart, Assignee Workload horizontal bar, and Sprint Velocity tracker.</p>
-        <p>Scroll down for the <strong>Overdue Tickets</strong> table — a sorted list of all past-due open tickets with assignees and days overdue. This is the primary document for weekly project reviews.</p>
+        <p>The Reports page provides five analytical charts for the active project:</p>
+        <p><strong>Ticket Status</strong> — doughnut chart showing the breakdown of tickets by status (Backlog, Todo, In Progress, Review, Done, Blocked).</p>
+        <p><strong>Priority Distribution</strong> — doughnut chart showing Critical, High, Medium, Low ticket counts.</p>
+        <p><strong>Tickets by Type</strong> — bar chart comparing Task, Bug, Feature, Story, and Improvement counts.</p>
+        <p><strong>Assignee Workload</strong> — horizontal bar chart showing open ticket count per team member.</p>
+        <p><strong>Sprint Velocity</strong> — bar chart comparing completed vs total tickets across sprints.</p>
+        <p>Below the charts, an <strong>Overdue Tickets</strong> table lists all past-due open tickets sorted by due date, with assignees and days overdue — useful for weekly project reviews.</p>
         <h3>Exporting</h3>
-        <p>Click <strong>Export CSV</strong> to download a spreadsheet of all tickets for use in Excel. Click <strong>Backup JSON</strong> to export a full backup of all your Teal PMS data.</p>
+        <p>Click <strong>Export CSV</strong> to download a spreadsheet of all tickets. Click <strong>Backup JSON</strong> to export a complete backup of all Teal PMS data (projects, tickets, epics, sprints, milestones, team).</p>
       </div>
 
+      <!-- Import -->
       <div class="guide-section" id="import">
         <h2>Importing Data</h2>
-        <p>Go to <strong>Import</strong> in the sidebar to migrate data from other tools. Teal PMS supports five sources:</p>
-        <p><strong>Zoho Projects</strong> — export your task list as CSV from Zoho Projects → Tasks → Export.</p>
-        <p><strong>Jira</strong> — use Jira's Issues → Export → XML or use the Jira Cloud backup JSON.</p>
-        <p><strong>Trello</strong> — open your board → Show Menu → More → Print and Export → Export as JSON.</p>
-        <p><strong>Asana</strong> — open your project → ⋯ → Export/Print → CSV.</p>
-        <p><strong>Teal PMS Backup</strong> — restore a previous JSON backup (replaces all data).</p>
-        <p>The import wizard auto-detects the format, shows a preview of tickets before committing, and lets you choose whether to import into an existing project or create a new one.</p>
-        <div class="warn-box">⚠ Restoring a full Teal PMS backup will overwrite all current data. Export a backup first if you want to preserve your current state.</div>
+        <p>Go to <strong>Import</strong> in the sidebar to migrate data from other tools. The import wizard supports five sources:</p>
+        <p><strong>Zoho Projects</strong> — export your task list as CSV from Zoho Projects &rarr; Tasks &rarr; Export.</p>
+        <p><strong>Jira</strong> — use Jira's Issues &rarr; Export &rarr; XML (or the Jira Cloud backup JSON).</p>
+        <p><strong>Trello</strong> — open your board &rarr; Show Menu &rarr; More &rarr; Print and Export &rarr; Export as JSON.</p>
+        <p><strong>Asana</strong> — open your project &rarr; &hellip; &rarr; Export/Print &rarr; CSV.</p>
+        <p><strong>Teal PMS Backup</strong> — restore a previous JSON backup exported from the Reports page.</p>
+        <p>The wizard auto-detects the format, previews the tickets before committing, and lets you choose whether to import into an existing project or create a new one.</p>
+        <div class="warn-box">Restoring a full Teal PMS backup will overwrite all current data. Export a backup first if you want to preserve your current state.</div>
       </div>
 
+      <!-- Data & Backup -->
       <div class="guide-section" id="data">
-        <h2>Data & Backup</h2>
-        <p>All Teal PMS data is stored in your browser's localStorage under the <code>tpms2-</code> key prefix. This is persistent across browser restarts but device-specific — data won't sync across computers automatically.</p>
+        <h2>Data &amp; Backup</h2>
+        <p>All Teal PMS data is stored in your browser's localStorage under the <code>tpms2-</code> key prefix. Data persists across browser restarts but is device-specific — it will not sync to other computers automatically.</p>
         <h3>Regular Backups</h3>
-        <p>Use <strong>Reports → Backup JSON</strong> regularly to save a full export. Store it on a shared drive or cloud folder so teammates can restore it on their machines.</p>
+        <p>Use <strong>Reports &rarr; Backup JSON</strong> to export a full snapshot. Store the file on a shared drive or cloud folder so team members can restore it on their machines, or so you have a recovery point before clearing the browser.</p>
         <h3>Restoring a Backup</h3>
-        <p>Go to <strong>Import</strong> → select <strong>Teal PMS Backup</strong> → upload your JSON file. Click Import to restore.</p>
-        <div class="warn-box">⚠ Clearing your browser's site data will erase all Teal PMS data. Always keep a recent JSON backup before clearing browser storage.</div>
-        <div class="tip">💡 Teal PMS — teal-pms.sujikumar.com</div>
+        <p>Go to <strong>Import &rarr; Teal PMS Backup</strong>, upload your JSON file, and confirm the import. All projects, tickets, epics, sprints, milestones, and team data will be restored.</p>
+        <h3>Resetting to Demo Data</h3>
+        <p>Open your browser's DevTools &rarr; Application &rarr; Local Storage, find the <code>tpms2-version</code> key, and delete it. Reload the page — the demo seed data will reload automatically.</p>
+        <div class="warn-box">Clearing your browser's site data will erase all Teal PMS data permanently. Always export a backup before doing so.</div>
+        <div class="tip">Live site: <strong>tealpms.pages.dev</strong> &nbsp;&bull;&nbsp; All data stays on your device &nbsp;&bull;&nbsp; No account needed</div>
       </div>
+
     </div>
   </div>
 </div>
@@ -132,12 +184,12 @@ const links = document.querySelectorAll('.guide-toc a');
 const observer = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (e.isIntersecting) {
-      links.forEach(l=>l.classList.remove('active'));
-      const a=document.querySelector(`.guide-toc a[href="#${e.target.id}"]`);
-      if(a) a.classList.add('active');
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector(`.guide-toc a[href="#${e.target.id}"]`);
+      if (a) a.classList.add('active');
     }
   });
-},{rootMargin:'-20% 0px -70% 0px'});
-sections.forEach(s=>observer.observe(s));
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
 </script>
 </body></html>
