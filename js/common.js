@@ -180,26 +180,20 @@ function buildNav(activeKey) {
   document.body.insertAdjacentHTML('afterbegin', `
     <nav class="sidebar">
       <div class="sidebar-logo">
-        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#60a5fa"/>
-              <stop offset="100%" stop-color="#3b82f6"/>
-            </linearGradient>
-          </defs>
-          <rect width="32" height="32" rx="8" fill="url(#lg1)"/>
-          <rect x="5" y="7" width="22" height="4" rx="2" fill="white"/>
-          <rect x="5" y="14" width="15" height="3.5" rx="1.75" fill="rgba(255,255,255,.8)"/>
-          <rect x="5" y="21" width="19" height="3.5" rx="1.75" fill="rgba(255,255,255,.9)"/>
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="8" fill="#f59e0b"/>
+          <rect x="5" y="7" width="22" height="4" rx="2" fill="#0d0d0d"/>
+          <rect x="5" y="14" width="15" height="3.5" rx="1.75" fill="#0d0d0d" opacity=".75"/>
+          <rect x="5" y="21" width="19" height="3.5" rx="1.75" fill="#0d0d0d" opacity=".9"/>
         </svg>
         <div class="sidebar-logo-text">Teal<span>PMS</span></div>
       </div>
       ${proj ? `
-      <div class="sidebar-project" onclick="window.location='projects.html'" style="cursor:pointer">
+      <div class="sidebar-project" onclick="window.location='projects.html'">
         <div class="sidebar-project-label">Active Project</div>
         <div class="sidebar-project-name">${proj.name}</div>
       </div>` : ''}
-      <div class="sidebar-section">Navigation</div>
+      <div class="sidebar-section">Main</div>
       ${navHtml}
       <div class="sidebar-bottom">
         <a class="nav-item" onclick="toggleTheme();return false;" href="#">
@@ -209,15 +203,15 @@ function buildNav(activeKey) {
     </nav>
     <div class="topbar">
       <div class="topbar-left">
-        <div class="topbar-title">${pageName}</div>
+        <div class="topbar-breadcrumb">Teal PMS &nbsp;/&nbsp; <strong>${pageName}</strong></div>
       </div>
       <div class="topbar-actions">
-        ${proj ? `<span style="font-size:12px;color:var(--text-muted);padding:4px 10px;border:1px solid var(--border);border-radius:20px">${proj.key}</span>` : ''}
+        ${proj ? `<span style="font-size:11px;color:var(--primary);background:var(--primary-bg);padding:3px 10px;border:1px solid rgba(245,158,11,.25);border-radius:20px;font-weight:600">${proj.key}</span>` : ''}
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌓</button>
       </div>
     </div>
-    <div class="demo-banner" style="margin:0;border-radius:0;border-left:none;border-right:none;position:fixed;top:var(--topbar-h);left:var(--sidebar-w);right:0;z-index:89;padding:6px 20px;font-size:11px">
-      🎯 Demo mode — sample data only &nbsp;·&nbsp; <a href="guide.html">Guide</a> &nbsp;·&nbsp; <a href="import.html">Import your data</a>
+    <div class="demo-banner">
+      🎯 Demo mode — sample data only &nbsp;·&nbsp; <a href="import.html">Import your data</a> &nbsp;·&nbsp; <a href="guide.html">Guide</a>
     </div>
   `);
   document.getElementById('toast-container') || document.body.insertAdjacentHTML('beforeend', '<div id="toast-container"></div>');
@@ -234,7 +228,7 @@ function daysFrom(iso) {
   return Math.round((new Date(iso + 'T00:00:00') - new Date()) / 86400000);
 }
 function avatarColor(name) {
-  const colors = ['#3b82f6','#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f43f5e','#84cc16','#0ea5e9'];
+  const colors = ['#f59e0b','#f97316','#ef4444','#10b981','#38bdf8','#a78bfa','#f472b6','#22c55e','#fbbf24','#06b6d4'];
   let h = 0; for (let c of String(name)) h = (h * 31 + c.charCodeAt(0)) & 0xFFFFFF;
   return colors[Math.abs(h) % colors.length];
 }
@@ -286,4 +280,4 @@ function exportData() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   a.download = `TealPMS_backup_${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); toast('Backup e
+  a.click(); toast('Backup e                                                                                                                                                                                                                                                                                                                                                             
