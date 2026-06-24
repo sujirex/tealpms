@@ -200,10 +200,10 @@ function buildNav(activeKey) {
     <nav class="sidebar">
       <div class="sidebar-logo">
         <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="8" fill="#f59e0b"/>
-          <rect x="5" y="7" width="22" height="4" rx="2" fill="#0d0d0d"/>
-          <rect x="5" y="14" width="15" height="3.5" rx="1.75" fill="#0d0d0d" opacity=".75"/>
-          <rect x="5" y="21" width="19" height="3.5" rx="1.75" fill="#0d0d0d" opacity=".9"/>
+          <rect width="32" height="32" rx="8" fill="#0DC8C8"/>
+          <rect x="5" y="7" width="22" height="4" rx="2" fill="#0a0a0a"/>
+          <rect x="5" y="14" width="15" height="3.5" rx="1.75" fill="#0a0a0a" opacity=".8"/>
+          <rect x="5" y="21" width="19" height="3.5" rx="1.75" fill="#0a0a0a" opacity=".9"/>
         </svg>
         <div class="sidebar-logo-text">Teal<span>PMS</span></div>
       </div>
@@ -248,13 +248,6 @@ function fmtDate(iso) {
 function daysFrom(iso) {
   if (!iso) return null;
   return Math.round((new Date(iso + 'T00:00:00') - new Date()) / 86400000);
-}
-function timeAgo(iso) {
-  const d = Math.round((Date.now() - new Date(iso)) / 1000);
-  if (d < 60) return 'just now';
-  if (d < 3600) return `${Math.floor(d/60)}m ago`;
-  if (d < 86400) return `${Math.floor(d/3600)}h ago`;
-  return `${Math.floor(d/86400)}d ago`;
 }
 function avatarColor(name) {
   const colors = ['#f59e0b','#f97316','#ef4444','#10b981','#38bdf8','#a78bfa','#f472b6','#22c55e','#fbbf24','#06b6d4'];
