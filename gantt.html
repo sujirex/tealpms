@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Teal PMS — Gantt</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/>
+<style>
+#gantt-main { position:relative; }
+.gantt-outer { display:flex; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.gantt-labels { width:260px; min-width:260px; flex-shrink:0; border-right:1px solid var(--border); background:var(--bg-card); z-index:10; }
+.gantt-labels-head { height:70px; padding:0 14px; display:flex;align-items:center;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);border-bottom:2px solid var(--border); }
+.gantt-label-row { display:flex;align-items:center;gap:8px;padding:0 14px;height:40px;border-bottom:1px solid var(--border-dim);font-size:12px;overflow:hidden; }
+.gantt-label-row.group-row { background:var(--bg-hover);font-weight:700;font-size:11px;text-transform:uppercase;color:var(--text-muted); }
+.gantt-label-text { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1; }
+.gantt-timeline-wrap { flex:1;overflow-x:auto;position:relative; }
+.gantt-timeline-head { height:70px;position:sticky;top:0;z-index:5;background:var(--bg-card);border-bottom:2px solid var(--border); }
+.gantt-month-row { display:flex;height:35px;border-bottom:1px solid var(--border-dim); }
+.gantt-month-cell { border-right:1px solid var(--border-dim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-dim);flex-shrink:0; }
+.gantt-day-row { display:flex;height:35px; }
+.gantt-day-cell { border-right:1px solid var(--border-dim);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted);flex-shrink:0; }
+.gantt-day-cell.weekend { background:rgba(0,0,0,.12); }
+.gantt-day-cell.today-col { background:rgba(239,68,68,.1);color:var(--fail);font-weight:700; }
+.gantt-rows { position:relative; }
+.gantt-bar-row { height:40px;border-bottom:1px solid var(--border-dim);position:relative; }
+.gantt-bar-row.group-row { background:var(--bg-hover);height:40px; }
+.g-bar { position:absolute;top:11px;height:18px;border-radius:4px;cursor:pointer;display:flex;align-items:center;padding:0 7px;font-size:10px;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap;transition:opacity .1s; }
+.g-bar:hover { opacity:.85; filter:brightness(1.1); }
+.g-today { position:absolute;top:0;bottom:0;width:2px;background:var(--fail);opacity:.7;pointer-events:none;z-index:3; }
+.g-ms { position:absolute;top:14px;width:12px;height:12px;transform:rotate(45deg);z-index:4;cursor:pointer; }
+.g-grid-line { position:absolute;top:0;bottom:0;width:1px;background:var(--border-dim);pointer-events:none; }
+.g-grid-line.week { background:var(--border);opacity:.5; }
+/* tooltip */
+.g-tooltip { position:fixed;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-size:12px;z-index:999;pointer-events:none;display:none;max-width:240px;box-shadow:var(--shadow); }
+</style>
+</head>
+<body>
+<script src="js/data.js"></script><script src="js/common.js"></script>
+<script>seedDemoData(); buildNav('gantt');</script>
+<div class="main-content" style="padding-top:60px">
+  <div class="page-header">
+    <div><div class="page-title">📅 Gantt Chart</div><div class="page-sub" id="gantt-sub"></div></div>
+    <div class="gantt-controls">
+      <select class="form-control" id="f-zoom" onchange="render()" style="max-width:130px">
+        <option value="month">Month View</option>
+        <option value="week">Week View</option>
+        <option value="quarter">Quarter View</option>
+      </select>
+      <select class="form-control" id="f-group" onchange="render()" style="max-width:150px">
+        <option value="epic">Group by Epic</option>
+        <option value="status">Group by Status</option>
+        <option value="none">No Grouping</option>
+      </select>
+      <select class="form-control" id="f-status" onchange="render()" style="max-width:140px">
+        <option value="">All Statuses</option>
+        <option>Backlog</option><option>Todo</option><option>In Progress</option>
+        <option>Review</option><option>Done</option><option>Blocked</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="scrollToToday()">📍 Today</button>
+    </div>
+  </div>
+
+  <div id="gantt-main">
+    <div class="gantt-outer" id="gantt-outer">
+      <div class="gantt-labels" id="gantt-labels"></div>
+      <div class="gantt-timeline-wrap" id="gantt-timeline-wrap">
+        <div class="gantt-timeline-head" id="gantt-head"></div>
+        <div class="gantt-rows" id="gantt-rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Milestone legend -->
+  <div class="card card-body" style="margin-top:16px;display:flex;gap:20px;flex-wrap:wrap;font-size:12px">
+    <span><span style="display:inline-block;width:12px;height:12px;background:#f59e0b;transform:rotate(45deg);margin-right:6px;border-radius:1px"></span>Milestone</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:#3b82f6;border-radius:2px;margin-right:6px"></span>Todo / Backlog</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:#f59e0b;border-radius:2px;margin-right:6px"></span>In Progress</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:#8b5cf6;border-radius:2px;margin-right:6px"></span>Review</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:#22c55e;border-radius:2px;margin-right:6px"></span>Done</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:2px;margin-right:6px"></span>Blocked / Overdue</span>
+  </div>
+</div>
+
+<div class="g-tooltip" id="g-tooltip"></div>
+
+<script>
+const proj = getActiveProject();
+document.getElementById('gantt-sub').textContent = proj?.name || '';
+
+const BAR_COLORS = {
+  'Backlog':'#3b82f6','Todo':'#60a5fa','In Progress':'#f59e0b',
+  'Review':'#8b5cf6','Done':'#22c55e','Blocked':'#ef4444'
+};
+
+function getBarColor(t) {
+  if (t.status === 'Done') return '#22c55e';
+  if (t.status === 'Blocked') return '#ef4444';
+  if (t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Done') return '#ef4444';
+  return BAR_COLORS[t.status] || '#3b82f6';
+}
+
+function render() {
+  const zoom = document.getElementById('f-zoom').value;
+  const groupBy = document.getElementById('f-group').value;
+  const fStatus = document.getElementById('f-status').value;
+
+  let tickets = (proj ? getTicketsByProject(proj.id) : [])
+    .filter(t => t.type !== 'Epic' && (t.startDate || t.dueDate))
+    .filter(t => !fStatus || t.status === fStatus);
+
+  if (!tickets.length) {
+    document.getElementById('gantt-labels').innerHTML = '<div class="gantt-labels-head">Ticket</div><div style="padding:40px;color:var(--text-muted);font-size:13px">No tickets with dates found. Set start/due dates on tickets.</div>';
+    document.getElementById('gantt-head').innerHTML = '';
+    document.getElementById('gantt-rows').innerHTML = '';
+    return;
+  }
+
+  // Date range
+  const allDates = tickets.flatMap(t => [t.startDate, t.dueDate].filter(Boolean)).map(d => new Date(d));
+  const today = new Date(); today.setHours(0,0,0,0);
+  allDates.push(today);
+
+  let rangeStart = new Date(Math.min(...allDates));
+  let rangeEnd   = new Date(Math.max(...allDates));
+  rangeStart.setDate(rangeStart.getDate() - (zoom === 'week' ? 3 : 7));
+  rangeEnd.setDate(rangeEnd.getDate() + (zoom === 'week' ? 3 : 14));
+
+  // Day width
+  const DAY_W = zoom === 'week' ? 40 : zoom === 'quarter' ? 14 : 24;
+  const totalDays = Math.ceil((rangeEnd - rangeStart) / 86400000) + 1;
+  const totalW = totalDays * DAY_W;
+
+  // Date helpers
+  const dateX = d => Math.floor((new Date(d) - rangeStart) / 86400000) * DAY_W;
+  const dayOf = idx => { const d = new Date(rangeStart); d.setDate(d.getDate() + idx); return d; };
+
+  // Group tickets
+  const epics = proj ? getEpicsByProject(proj.id) : [];
+  let groups = [];
+  if (groupBy === 'epic') {
+    const epicMap = {};
+    tickets.forEach(t => {
+      const k = t.epicId || '__none__';
+      if (!epicMap[k]) epicMap[k] = [];
+      epicMap[k].push(t);
+    });
+    groups = Object.entries(epicMap).map(([eid, tks]) => {
+      const ep = epics.find(e => e.id === eid);
+      return { label: ep ? ep.name : 'No Epic', color: ep?.color || '#475569', tickets: tks };
+    });
+  } else if (groupBy === 'status') {
+    const statuses = ['Todo','Backlog','In Progress','Review','Done','Blocked'];
+    statuses.forEach(s => {
+      const tks = tickets.filter(t => t.status === s);
+      if (tks.length) groups.push({ label: s, color: BAR_COLORS[s], tickets: tks });
+    });
+  } else {
+    groups = [{ label: '', color: '#3b82f6', tickets }];
+  }
+
+  // Build labels
+  let labelsHtml = `<div class="gantt-labels-head">Ticket</div>`;
+  groups.forEach(g => {
+    if (groupBy !== 'none') {
+      labelsHtml += `<div class="gantt-label-row group-row"><span style="width:10px;height:10px;background:${g.color};border-radius:2px;flex-shrink:0"></span>${g.label}</div>`;
+    }
+    g.tickets.forEach(t => {
+      labelsHtml += `<div class="gantt-label-row">
+        <span class="ticket-key">${t.key}</span>
+        <span class="gantt-label-text" title="${t.title}">${t.title}</span>
+      </div>`;
+    });
+  });
+  document.getElementById('gantt-labels').innerHTML = labelsHtml;
+
+  // Build timeline header
+  let monthRow = '', dayRow = '';
+  let prevMonth = -1, monthStart = 0;
+  for (let i = 0; i < totalDays; i++) {
+    const d = dayOf(i);
+    const isToday = d.toDateString() === today.toDateString();
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+    const isWeekStart = d.getDay() === 1;
+    if (d.getMonth() !== prevMonth) {
+      if (prevMonth !== -1) {
+        monthRow += `<div class="gantt-month-cell" style="width:${(i - monthStart)*DAY_W}px;flex-shrink:0">${new Date(rangeStart.getFullYear(), prevMonth).toLocaleString('default',{month:'short',year:'numeric'})}</div>`;
+      }
+      prevMonth = d.getMonth(); monthStart = i;
+    }
+    if (zoom !== 'quarter' || isWeekStart) {
+      const label = zoom === 'quarter' ? `W${Math.ceil(d.getDate()/7)}` : d.getDate();
+      dayRow += `<div class="gantt-day-cell ${isWeekend?'weekend':''} ${isToday?'today-col':''}" style="width:${DAY_W}px">${label}</div>`;
+    }
+  }
+  monthRow += `<div class="gantt-month-cell" style="width:${(totalDays-monthStart)*DAY_W}px;flex-shrink:0">${new Date(rangeStart.getFullYear(), prevMonth).toLocaleString('default',{month:'short',year:'numeric'})}</div>`;
+
+  // Grid lines + today line
+  let gridLines = '';
+  for (let i = 0; i < totalDays; i++) {
+    const d = dayOf(i);
+    if (d.getDay() === 1) gridLines += `<div class="g-grid-line week" style="left:${i*DAY_W}px"></div>`;
+  }
+  const todayX = dateX(today.toISOString().slice(0,10));
+  gridLines += `<div class="g-today" style="left:${todayX}px"></div>`;
+
+  // Milestones
+  const milestones = getMilestonesByProject(proj?.id || '');
+  let msHtml = '';
+  milestones.forEach(m => {
+    if (!m.date) return;
+    const x = dateX(m.date);
+    if (x >= 0 && x <= totalW) {
+      const col = m.status === 'Completed' ? '#22c55e' : '#f59e0b';
+      msHtml += `<div class="g-ms" style="left:${x}px;background:${col}" title="${m.name} — ${fmtDate(m.date)}"></div>`;
+    }
+  });
+
+  // Bars
+  let rowsHtml = '';
+  groups.forEach(g => {
+    if (groupBy !== 'none') {
+      rowsHtml += `<div class="gantt-bar-row group-row" style="width:${totalW}px">${gridLines}</div>`;
+    }
+    g.tickets.forEach(t => {
+      const s = t.startDate || t.dueDate;
+      const e = t.dueDate || t.startDate;
+      const x1 = Math.max(0, dateX(s));
+      const x2 = Math.min(totalW, dateX(e) + DAY_W);
+      const w = Math.max(DAY_W, x2 - x1);
+      const col = getBarColor(t);
+      rowsHtml += `<div class="gantt-bar-row" style="width:${totalW}px">
+        ${gridLines}
+        <div class="g-bar" style="left:${x1}px;width:${w}px;background:${col}"
+          onmouseenter="showTip(event,'${t.key}','${t.title.replace(/'/g,"\\'")}','${t.status}','${fmtDate(t.startDate)||'—'}','${fmtDate(t.dueDate)||'—'}')"
+          onmouseleave="hideTip()">
+          ${w > 60 ? t.title.slice(0,20) : ''}
+        </div>
+      </div>`;
+    });
+  });
+  rowsHtml += `<div style="position:absolute;top:0;bottom:0;left:0;right:0;pointer-events:none">${msHtml}</div>`;
+
+  document.getElementById('gantt-head').innerHTML = `
+    <div class="gantt-month-row" style="min-width:${totalW}px">${monthRow}</div>
+    <div class="gantt-day-row" style="min-width:${totalW}px">${dayRow}</div>`;
+  document.getElementById('gantt-rows').innerHTML = rowsHtml;
+  document.getElementById('gantt-rows').style.position = 'relative';
+
+  // Auto-scroll to today
+  scrollToToday();
+}
+
+function scrollToToday() {
+  const wrap = document.getElementById('gantt-timeline-wrap');
+  const zoom = document.getElementById('f-zoom').value;
+  const DAY_W = zoom === 'week' ? 40 : zoom === 'quarter' ? 14 : 24;
+  const tickets = proj ? getTicketsByProject(proj.id).filter(t=>t.startDate||t.dueDate) : [];
+  if (!tickets.length) return;
+  const allDates = tickets.flatMap(t=>[t.startDate,t.dueDate].filter(Boolean)).map(d=>new Date(d));
+  const today = new Date(); today.setHours(0,0,0,0);
+  allDates.push(today);
+  let rangeStart = new Date(Math.min(...allDates));
+  rangeStart.setDate(rangeStart.getDate() - (zoom==='week'?3:7));
+  const todayOffset = Math.floor((today - rangeStart) / 86400000) * DAY_W;
+  wrap.scrollLeft = Math.max(0, todayOffset - wrap.clientWidth/2);
+}
+
+function showTip(e, key, title, status, start, end) {
+  const t = document.getElementById('g-tooltip');
+  t.style.display = 'block';
+  t.innerHTML = `<strong>${key}</strong><br><span style="color:var(--text-dim)">${title}</span><br><br>Status: ${status}<br>Start: ${start}<br>Due: ${end}`;
+  t.style.left = (e.clientX + 12) + 'px';
+  t.style.top = (e.clientY - 10) + 'px';
+}
+function hideTip() { document.getElementById('g-tooltip').style.display = 'none'; }
+
+render();
+</script>
+</body></html>

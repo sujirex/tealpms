@@ -1,5 +1,5 @@
-/* ===== TEAL PMS v2 — Data Layer & Utilities ===== */
-const TPMS_VERSION = '1';
+/* ===== Teal PMS v2 — Data Layer & Utilities ===== */
+const TPMS_VERSION = '2';
 const KEY = k => `tpms2-${k}`;
 const store = {
   get: k => { try { return JSON.parse(localStorage.getItem(KEY(k))); } catch { return null; } },
@@ -92,6 +92,14 @@ function updateSprint(id, patch) { saveSprints(getSprints().map(s => s.id === id
 const getTeam = () => store.get('team') || [];
 const saveTeam = t => store.set('team', t);
 
+/* ---- Activity Log ---- */
+const getActivities = () => store.get('activities') || [];
+function logActivity(type, text, ticketKey, projectId) {
+  const acts = getActivities();
+  acts.unshift({ id: `ACT-${Date.now()}`, type, text, ticketKey, projectId, createdAt: new Date().toISOString() });
+  store.set('activities', acts.slice(0, 200)); // keep last 200
+}
+
 /* ---- Milestones ---- */
 const getMilestones = () => store.get('milestones') || [];
 const saveMilestones = m => store.set('milestones', m);
@@ -119,6 +127,13 @@ function seedDemoData() {
     saveTeam(SEED.team || []);
     saveMilestones(SEED.milestones || []);
     if (SEED.projects?.[0]) setActiveProject(SEED.projects[0].id);
+    // Seed some initial activity
+    store.set('activities', [
+      { id:'ACT-1', type:'created', text:'Project ALPHA initialized with 15 tickets', ticketKey:'', projectId:'PRJ-ALPHA', createdAt: new Date(Date.now()-86400000*2).toISOString() },
+      { id:'ACT-2', type:'updated', text:'ALPHA-007: Status changed to In Progress', ticketKey:'ALPHA-007', projectId:'PRJ-ALPHA', createdAt: new Date(Date.now()-3600000*5).toISOString() },
+      { id:'ACT-3', type:'comment', text:'ALPHA-003: New comment added by User3', ticketKey:'ALPHA-003', projectId:'PRJ-ALPHA', createdAt: new Date(Date.now()-3600000*2).toISOString() },
+      { id:'ACT-4', type:'done', text:'BETA-002: Ticket marked as Done', ticketKey:'BETA-002', projectId:'PRJ-BETA', createdAt: new Date(Date.now()-1800000).toISOString() },
+    ]);
   }
 }
 
@@ -141,6 +156,7 @@ const NAV = [
   { key:'tickets',    href:'tickets.html',    icon:'🎫', label:'Tickets' },
   { key:'board',      href:'board.html',      icon:'📋', label:'Board' },
   { key:'scrum',      href:'scrum.html',      icon:'🔄', label:'Sprints' },
+  { key:'gantt',      href:'gantt.html',      icon:'📅', label:'Gantt' },
   { key:'roadmap',    href:'roadmap.html',    icon:'🗺️', label:'Roadmap' },
   { key:'team',       href:'team.html',       icon:'👥', label:'Team' },
   { key:'reports',    href:'reports.html',    icon:'📈', label:'Reports' },
@@ -162,33 +178,29 @@ function buildNav(activeKey) {
   }).join('');
 
   document.body.insertAdjacentHTML('afterbegin', `
-    <div class="demo-banner">
-      🚧 <strong>DEMO</strong> &nbsp;·&nbsp; Teal PMS v2 — Sample data only &nbsp;·&nbsp; <a href="guide.html">Read the Guide</a>
-    </div>
     <nav class="sidebar">
       <div class="sidebar-logo">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-            <rect x="3" y="4" width="18" height="4" rx="1.5" fill="white" stroke="none"/>
-            <rect x="3" y="10" width="12" height="3" rx="1.5" fill="rgba(255,255,255,.7)" stroke="none"/>
-            <rect x="3" y="15" width="15" height="3" rx="1.5" fill="rgba(255,255,255,.85)" stroke="none"/>
-          </svg>
-        </div>
-        <div>
-          <div class="logo-text">Teal PMS</div>
-          <div class="logo-sub">Project Management</div>
-        </div>
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#60a5fa"/>
+              <stop offset="100%" stop-color="#3b82f6"/>
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="8" fill="url(#lg1)"/>
+          <rect x="5" y="7" width="22" height="4" rx="2" fill="white"/>
+          <rect x="5" y="14" width="15" height="3.5" rx="1.75" fill="rgba(255,255,255,.8)"/>
+          <rect x="5" y="21" width="19" height="3.5" rx="1.75" fill="rgba(255,255,255,.9)"/>
+        </svg>
+        <div class="sidebar-logo-text">Teal<span>PMS</span></div>
       </div>
       ${proj ? `
-      <div class="sidebar-project" onclick="window.location='projects.html'">
-        <div class="proj-label">Active Project</div>
-        <div class="proj-name">${proj.name}</div>
-        <div class="proj-key">${proj.key} · ${proj.category || ''}</div>
+      <div class="sidebar-project" onclick="window.location='projects.html'" style="cursor:pointer">
+        <div class="sidebar-project-label">Active Project</div>
+        <div class="sidebar-project-name">${proj.name}</div>
       </div>` : ''}
-      <div class="nav-section">
-        <div class="nav-label">Navigation</div>
-        ${navHtml}
-      </div>
+      <div class="sidebar-section">Navigation</div>
+      ${navHtml}
       <div class="sidebar-bottom">
         <a class="nav-item" onclick="toggleTheme();return false;" href="#">
           <span class="nav-icon">🌓</span>Toggle Theme
@@ -196,18 +208,16 @@ function buildNav(activeKey) {
       </div>
     </nav>
     <div class="topbar">
-      <div class="breadcrumb">
-        <span>Teal PMS</span>
-        <span class="sep">/</span>
-        <strong>${pageName}</strong>
+      <div class="topbar-left">
+        <div class="topbar-title">${pageName}</div>
       </div>
-      <div class="topbar-right">
-        <div class="search-box">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" placeholder="Search tickets…" id="global-search" onkeyup="if(this.value.length>1)window.location='tickets.html?q='+encodeURIComponent(this.value)" />
-        </div>
-        <button class="btn-icon" title="Toggle theme" onclick="toggleTheme()">🌓</button>
+      <div class="topbar-actions">
+        ${proj ? `<span style="font-size:12px;color:var(--text-muted);padding:4px 10px;border:1px solid var(--border);border-radius:20px">${proj.key}</span>` : ''}
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌓</button>
       </div>
+    </div>
+    <div class="demo-banner" style="margin:0;border-radius:0;border-left:none;border-right:none;position:fixed;top:var(--topbar-h);left:var(--sidebar-w);right:0;z-index:89;padding:6px 20px;font-size:11px">
+      🎯 Demo mode — sample data only &nbsp;·&nbsp; <a href="guide.html">Guide</a> &nbsp;·&nbsp; <a href="import.html">Import your data</a>
     </div>
   `);
   document.getElementById('toast-container') || document.body.insertAdjacentHTML('beforeend', '<div id="toast-container"></div>');
@@ -224,7 +234,7 @@ function daysFrom(iso) {
   return Math.round((new Date(iso + 'T00:00:00') - new Date()) / 86400000);
 }
 function avatarColor(name) {
-  const colors = ['#0A9696','#3fb950','#58a6ff','#bc8cff','#e3b341','#f85149','#0DC8C8','#ff9500','#06b6d4','#8b5cf6'];
+  const colors = ['#3b82f6','#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f43f5e','#84cc16','#0ea5e9'];
   let h = 0; for (let c of String(name)) h = (h * 31 + c.charCodeAt(0)) & 0xFFFFFF;
   return colors[Math.abs(h) % colors.length];
 }
@@ -239,7 +249,7 @@ function renderAvatars(assignees, max = 3) {
     '</div>';
 }
 function statusBadge(s) {
-  const m = { 'Backlog':'badge-backlog','Todo':'badge-todo','In Progress':'badge-progress','Review':'badge-review','Done':'badge-done','Blocked':'badge-blocked' };
+  const m = { 'Backlog':'badge-backlog','Todo':'badge-todo','In Progress':'badge-inprogress','Review':'badge-review','Done':'badge-done','Blocked':'badge-blocked' };
   return `<span class="badge ${m[s]||'badge-backlog'}">${s||'Backlog'}</span>`;
 }
 function priorityBadge(p) {
@@ -254,10 +264,9 @@ function prioIcon(p) {
   const m = { 'Critical':'🔴','High':'🟠','Medium':'🟡','Low':'🔵' };
   return m[p] || '⚪';
 }
-function progressBar(pct, cls = '') {
+function progressBar(pct) {
   const p = Math.min(100, Math.max(0, pct || 0));
-  const barCls = p >= 100 ? 'done' : p < 30 ? 'fail' : '';
-  return `<div class="progress"><div class="progress-bar ${barCls} ${cls}" style="width:${p}%"></div></div>`;
+  return `<div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div>`;
 }
 function toast(msg, type = 'pass') {
   const c = document.getElementById('toast-container'); if (!c) return;
@@ -277,30 +286,4 @@ function exportData() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   a.download = `TealPMS_backup_${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); toast('Backup exported ✓');
-}
-function importData(file) {
-  const r = new FileReader();
-  r.onload = e => {
-    try {
-      const d = JSON.parse(e.target.result);
-      if (d.projects) saveProjects(d.projects);
-      if (d.tickets) saveTickets(d.tickets);
-      if (d.epics) saveEpics(d.epics);
-      if (d.sprints) saveSprints(d.sprints);
-      if (d.team) saveTeam(d.team);
-      if (d.milestones) saveMilestones(d.milestones);
-      toast('Data restored ✓'); setTimeout(() => location.reload(), 800);
-    } catch { toast('Invalid backup file', 'fail'); }
-  };
-  r.readAsText(file);
-}
-
-/* ---- Stats helper ---- */
-function calcProjectStats(pid) {
-  const tickets = getTicketsByProject(pid).filter(t => t.type !== 'Epic');
-  const done = tickets.filter(t => t.status === 'Done').length;
-  const inProg = tickets.filter(t => t.status === 'In Progress').length;
-  const overdue = tickets.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Done').length;
-  return { total: tickets.length, done, inProg, overdue, open: tickets.length - done - inProg, pct: tickets.length ? Math.round(done / tickets.length * 100) : 0 };
-}
+  a.click(); toast('Backup e

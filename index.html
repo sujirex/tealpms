@@ -1,133 +1,183 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-<head>
-  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Teal PMS — Dashboard</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
-  <link rel="stylesheet" href="css/style.css"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-</head>
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Teal PMS — Dashboard</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script></head>
 <body>
-<script src="js/data.js"></script>
-<script src="js/common.js"></script>
+<script src="js/data.js"></script><script src="js/common.js"></script>
 <script>seedDemoData(); buildNav('dashboard');</script>
-<div class="main-content">
-  <div class="page-header">
-    <div><div class="page-title">📊 Dashboard</div><div class="page-sub">Project overview and activity</div></div>
-    <div class="page-header-actions">
-      <button class="btn btn-outline btn-sm" onclick="exportData()">⬇ Backup</button>
-      <a href="tickets.html" class="btn btn-primary btn-sm">+ New Ticket</a>
+<div class="main-content" style="padding-top:60px">
+  <!-- Stat tiles -->
+  <div class="grid-4" style="margin-bottom:20px" id="stat-tiles"></div>
+
+  <!-- Row 1: Status chart + Priority chart + Activity -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 320px;gap:16px;margin-bottom:20px">
+    <div class="card card-body">
+      <div style="font-weight:700;margin-bottom:12px;font-size:14px">Ticket Status</div>
+      <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+    </div>
+    <div class="card card-body">
+      <div style="font-weight:700;margin-bottom:12px;font-size:14px">Priority Distribution</div>
+      <div class="chart-wrap"><canvas id="priorityChart"></canvas></div>
+    </div>
+    <div class="card card-body" style="display:flex;flex-direction:column">
+      <div style="font-weight:700;margin-bottom:12px;font-size:14px">🕐 Recent Activity</div>
+      <div id="activity-feed" style="flex:1;overflow-y:auto;max-height:220px"></div>
     </div>
   </div>
-  <div class="stat-grid" id="dash-stats"></div>
-  <div class="grid-2" style="gap:20px;margin-bottom:20px">
+
+  <!-- Row 2: Active sprints + Milestones -->
+  <div class="grid-2" style="margin-bottom:20px">
     <div class="card">
-      <div class="card-header"><div class="card-title">Ticket Status</div></div>
-      <div class="card-body"><div class="chart-wrap"><canvas id="status-chart"></canvas></div></div>
+      <div class="card-header">
+        <span style="font-weight:700;font-size:14px">🔄 Active Sprints</span>
+        <a href="scrum.html" class="btn btn-outline btn-sm">View Sprints →</a>
+      </div>
+      <div id="sprints-panel"></div>
     </div>
     <div class="card">
-      <div class="card-header"><div class="card-title">Priority Breakdown</div></div>
-      <div class="card-body"><div class="chart-wrap"><canvas id="prio-chart"></canvas></div></div>
+      <div class="card-header">
+        <span style="font-weight:700;font-size:14px">🏁 Milestones</span>
+        <a href="roadmap.html" class="btn btn-outline btn-sm">View Roadmap →</a>
+      </div>
+      <div id="milestones-panel"></div>
     </div>
   </div>
-  <div class="grid-2" style="gap:20px;margin-bottom:20px">
+
+  <!-- Row 3: Overdue + In Progress tickets -->
+  <div class="grid-2">
     <div class="card">
-      <div class="card-header"><div class="card-title">📋 Active Sprints</div></div>
-      <div class="card-body" id="sprint-panel"></div>
+      <div class="card-header">
+        <span style="font-weight:700;font-size:14px">⚠️ Overdue Tickets</span>
+        <a href="tickets.html" class="btn btn-outline btn-sm">View All →</a>
+      </div>
+      <div id="overdue-panel"></div>
     </div>
     <div class="card">
-      <div class="card-header"><div class="card-title">🏁 Milestones</div><a href="#" class="btn btn-ghost btn-sm">View all →</a></div>
-      <div class="card-body" id="milestone-panel"></div>
-    </div>
-  </div>
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-header"><div class="card-title">⚠️ Overdue Tickets</div><a href="tickets.html?status=overdue" class="btn btn-ghost btn-sm">View all →</a></div>
-    <div class="table-wrap">
-      <table><thead><tr><th>Key</th><th>Title</th><th>Assignees</th><th>Due</th><th>Priority</th></tr></thead>
-      <tbody id="overdue-table"></tbody></table>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-header"><div class="card-title">🔥 In Progress</div><a href="board.html" class="btn btn-ghost btn-sm">Open Board →</a></div>
-    <div class="table-wrap">
-      <table><thead><tr><th>Key</th><th>Title</th><th>Type</th><th>Assignees</th><th>Progress</th><th>Due</th></tr></thead>
-      <tbody id="inprogress-table"></tbody></table>
+      <div class="card-header">
+        <span style="font-weight:700;font-size:14px">⚡ In Progress</span>
+        <a href="board.html" class="btn btn-outline btn-sm">Open Board →</a>
+      </div>
+      <div id="inprog-panel"></div>
     </div>
   </div>
 </div>
+
 <script>
 const proj = getActiveProject();
-const tickets = proj ? getTicketsByProject(proj.id).filter(t => t.type !== 'Epic') : [];
-const stats = calcProjectStats(proj?.id);
-const overdue = tickets.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Done');
+const tickets = proj ? getTicketsByProject(proj.id) : [];
+const sprints = proj ? getSprintsByProject(proj.id) : [];
 
-document.getElementById('dash-stats').innerHTML = `
-  <div class="stat-tile"><div class="stat-value">${stats.total}</div><div class="stat-label">Total Tickets</div></div>
-  <div class="stat-tile done"><div class="stat-value" style="color:var(--pass)">${stats.done}</div><div class="stat-label">Done</div><div class="stat-sub">${stats.pct}%</div></div>
-  <div class="stat-tile warn"><div class="stat-value" style="color:var(--warn)">${stats.inProg}</div><div class="stat-label">In Progress</div></div>
-  <div class="stat-tile fail"><div class="stat-value" style="color:var(--fail)">${overdue.length}</div><div class="stat-label">Overdue</div></div>
-  <div class="stat-tile info"><div class="stat-value" style="color:var(--info)">${getSprintsByProject(proj?.id||'').filter(s=>s.status==='Active').length}</div><div class="stat-label">Active Sprints</div></div>
-`;
+const BLUE='#3b82f6', LBLUE='#60a5fa', WARN='#f59e0b', FAIL='#ef4444', PASS='#22c55e', PURPLE='#8b5cf6';
+const tc = () => getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#64748b';
 
-// Charts
-const textDim = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim();
-const statCounts = {Done:0,'In Progress':0,'Review':0,Todo:0,Backlog:0,Blocked:0};
-tickets.forEach(t=>{if(statCounts[t.status]!==undefined)statCounts[t.status]++;});
-new Chart(document.getElementById('status-chart'),{type:'doughnut',data:{labels:Object.keys(statCounts),datasets:[{data:Object.values(statCounts),backgroundColor:['#3fb950','#e3b341','#bc8cff','#58a6ff','#8b949e','#f85149'],borderWidth:2,borderColor:'var(--bg-card)'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{color:'#7ab8b8',font:{size:11},padding:12}}}}});
+// Stat tiles
+const done = tickets.filter(t=>t.status==='Done').length;
+const inProg = tickets.filter(t=>t.status==='In Progress').length;
+const blocked = tickets.filter(t=>t.status==='Blocked').length;
+const overdue = tickets.filter(t=>t.dueDate&&new Date(t.dueDate)<new Date()&&t.status!=='Done').length;
+const pct = tickets.length ? Math.round(done/tickets.length*100) : 0;
+document.getElementById('stat-tiles').innerHTML = [
+  {icon:'🎫', val:tickets.length,   label:'Total Tickets',   col:BLUE,   sub:`${pct}% done`},
+  {icon:'✅', val:done,             label:'Completed',        col:PASS,   sub:`+${inProg} in progress`},
+  {icon:'🔴', val:overdue,          label:'Overdue',          col:FAIL,   sub:'Need attention'},
+  {icon:'🚫', val:blocked,          label:'Blocked',          col:WARN,   sub:'Escalate now'},
+].map(s=>`<div class="stat-tile">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+    <div style="font-size:24px">${s.icon}</div>
+    <div style="font-size:28px;font-weight:800;color:${s.col}">${s.val}</div>
+  </div>
+  <div style="font-size:13px;font-weight:600">${s.label}</div>
+  <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${s.sub}</div>
+</div>`).join('');
 
-const prioCounts={Critical:0,High:0,Medium:0,Low:0};
-tickets.forEach(t=>{if(prioCounts[t.priority]!==undefined)prioCounts[t.priority]++;});
-new Chart(document.getElementById('prio-chart'),{type:'doughnut',data:{labels:Object.keys(prioCounts),datasets:[{data:Object.values(prioCounts),backgroundColor:['#f85149','#ff9500','#e3b341','#58a6ff'],borderWidth:2,borderColor:'var(--bg-card)'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{color:'#7ab8b8',font:{size:11},padding:12}}}}});
+// Status chart
+const statuses=['Backlog','Todo','In Progress','Review','Done','Blocked'];
+const sCounts=statuses.map(s=>tickets.filter(t=>t.status===s).length);
+new Chart(document.getElementById('statusChart'),{type:'doughnut',data:{labels:statuses,datasets:[{data:sCounts,backgroundColor:['#334155','#3b82f6',WARN,PURPLE,PASS,FAIL],borderWidth:0}]},options:{plugins:{legend:{position:'right',labels:{color:tc(),boxWidth:11,font:{size:11}}}},cutout:'68%'}});
 
-// Sprints
-const sprints = getSprintsByProject(proj?.id||'').filter(s=>s.status==='Active'||s.status==='Completed').slice(-2);
-document.getElementById('sprint-panel').innerHTML = sprints.length ? sprints.map(s=>{
-  const st = getTickets().filter(t=>t.sprintId===s.id);
-  const done = st.filter(t=>t.status==='Done').length;
-  const pct = st.length ? Math.round(done/st.length*100) : 0;
-  return `<div style="margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-      <span style="font-weight:600;font-size:13px">${s.name}</span>
-      <span class="badge ${s.status==='Active'?'badge-progress':'badge-done'}">${s.status}</span>
-    </div>
-    <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">${done}/${st.length} tickets · ${pct}%</div>
-    ${progressBar(pct)}
-  </div>`;
-}).join('') : '<p style="color:var(--text-muted);font-size:13px">No active sprints</p>';
+// Priority chart
+const prios=['Critical','High','Medium','Low'];
+const pCounts=prios.map(p=>tickets.filter(t=>t.priority===p).length);
+new Chart(document.getElementById('priorityChart'),{type:'doughnut',data:{labels:prios,datasets:[{data:pCounts,backgroundColor:[FAIL,WARN,BLUE,'#475569'],borderWidth:0}]},options:{plugins:{legend:{position:'right',labels:{color:tc(),boxWidth:11,font:{size:11}}}},cutout:'68%'}});
+
+// Activity feed
+const acts = getActivities().filter(a=>!proj||a.projectId===proj.id||!a.projectId).slice(0,20);
+const actIcons = {created:'🆕',updated:'✏️',comment:'💬',done:'✅',import:'📥'};
+const timeAgo = iso => {
+  const d = Math.round((Date.now()-new Date(iso))/1000);
+  if(d<60) return 'just now'; if(d<3600) return `${Math.floor(d/60)}m ago`;
+  if(d<86400) return `${Math.floor(d/3600)}h ago`; return `${Math.floor(d/86400)}d ago`;
+};
+document.getElementById('activity-feed').innerHTML = acts.length
+  ? acts.map(a=>`<div class="activity-item">
+      <div class="activity-dot" style="background:${a.type==='done'?PASS:a.type==='comment'?PURPLE:BLUE}"></div>
+      <div>
+        <div class="activity-text">${actIcons[a.type]||'•'} ${a.text}${a.ticketKey?` <span class="ticket-key">${a.ticketKey}</span>`:''}</div>
+        <div class="activity-time">${timeAgo(a.createdAt)}</div>
+      </div>
+    </div>`).join('')
+  : '<div style="color:var(--text-muted);font-size:12px;padding:12px 0">No activity yet.</div>';
+
+// Active sprints
+const activeSprints = sprints.filter(s=>s.status==='Active').slice(0,3);
+document.getElementById('sprints-panel').innerHTML = activeSprints.length
+  ? activeSprints.map(s=>{
+      const st=tickets.filter(t=>t.sprintId===s.id);
+      const sd=st.filter(t=>t.status==='Done').length;
+      const p=st.length?Math.round(sd/st.length*100):0;
+      return `<div style="padding:14px 20px;border-bottom:1px solid var(--border-dim)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-weight:600;font-size:13px">${s.name}</span>
+          <span style="font-size:12px;color:var(--text-muted)">${fmtDate(s.startDate)} → ${fmtDate(s.endDate)}</span>
+        </div>
+        ${progressBar(p)}
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${sd}/${st.length} done · ${p}%</div>
+      </div>`;
+    }).join('')
+  : `<div style="padding:20px;color:var(--text-muted);font-size:13px">No active sprints. <a href="scrum.html">Start a sprint →</a></div>`;
 
 // Milestones
-const ms = getMilestonesByProject(proj?.id||'').slice(0,5);
-document.getElementById('milestone-panel').innerHTML = ms.length ? ms.map(m=>{
-  const d = daysFrom(m.date);
-  const col = m.status==='Completed'?'var(--pass)':d!==null&&d<0?'var(--fail)':'var(--teal-br)';
-  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-    <div style="width:10px;height:10px;border-radius:2px;background:${col};flex-shrink:0;transform:rotate(45deg)"></div>
-    <div style="flex:1;min-width:0">
-      <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name}</div>
-      <div style="font-size:11px;color:var(--text-muted)">${fmtDate(m.date)}</div>
-    </div>
-    ${statusBadge(m.status)}
-  </div>`;
-}).join('') : '<p style="color:var(--text-muted);font-size:13px">No milestones</p>';
+const ms = getMilestonesByProject(proj?.id||'').sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,5);
+document.getElementById('milestones-panel').innerHTML = ms.length
+  ? ms.map(m=>{
+      const d=daysFrom(m.date);
+      const col=m.status==='Completed'?PASS:d!==null&&d<0?FAIL:BLUE;
+      return `<div style="display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--border-dim)">
+        <div style="width:10px;height:10px;background:${col};border-radius:2px;transform:rotate(45deg);flex-shrink:0"></div>
+        <div style="flex:1;font-size:13px;font-weight:500">${m.name}</div>
+        <div style="text-align:right">
+          <div style="font-size:12px">${fmtDate(m.date)}</div>
+          ${d!==null?`<div style="font-size:10px;color:${col}">${d<0?`${Math.abs(d)}d late`:d===0?'Today':`${d}d left`}</div>`:''}
+        </div>
+      </div>`;
+    }).join('')
+  : `<div style="padding:20px;color:var(--text-muted);font-size:13px">No milestones defined.</div>`;
 
-// Overdue table
-document.getElementById('overdue-table').innerHTML = overdue.slice(0,8).map(t=>`<tr>
-  <td><a href="tickets.html" class="ticket-key">${t.key}</a></td>
-  <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</td>
-  <td>${renderAvatars(t.assignees)}</td>
-  <td style="color:var(--fail);font-size:12px">${fmtDate(t.dueDate)}</td>
-  <td>${priorityBadge(t.priority)}</td>
-</tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--pass);padding:16px">✅ No overdue tickets</td></tr>';
+// Overdue tickets
+const overdueList=tickets.filter(t=>t.dueDate&&new Date(t.dueDate)<new Date()&&t.status!=='Done').sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate)).slice(0,6);
+document.getElementById('overdue-panel').innerHTML = overdueList.length
+  ? `<div class="table-wrap"><table><thead><tr><th>Key</th><th>Title</th><th>Priority</th><th>Due</th></tr></thead><tbody>
+    ${overdueList.map(t=>`<tr>
+      <td><span class="ticket-key">${t.key}</span></td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</td>
+      <td>${priorityBadge(t.priority)}</td>
+      <td style="color:var(--fail);font-size:12px">${fmtDate(t.dueDate)}</td>
+    </tr>`).join('')}
+    </tbody></table></div>`
+  : `<div style="padding:20px;color:var(--pass);font-size:13px">🎉 No overdue tickets!</div>`;
 
-// In progress table
-const inProg = tickets.filter(t=>t.status==='In Progress').slice(0,8);
-document.getElementById('inprogress-table').innerHTML = inProg.map(t=>`<tr>
-  <td><span class="ticket-key">${t.key}</span></td>
-  <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</td>
-  <td>${typeBadge(t.type)}</td>
-  <td>${renderAvatars(t.assignees)}</td>
-  <td style="min-width:100px">${progressBar(t.pctComplete)}<span style="font-size:11px;color:var(--text-muted)">${t.pctComplete||0}%</span></td>
-  <td style="font-size:12px;color:var(--text-muted)">${fmtDate(t.dueDate)}</td>
-</tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:16px">No tickets in progress</td></tr>';
+// In Progress
+const ipList=tickets.filter(t=>t.status==='In Progress').slice(0,6);
+document.getElementById('inprog-panel').innerHTML = ipList.length
+  ? `<div class="table-wrap"><table><thead><tr><th>Key</th><th>Title</th><th>Assignees</th><th>Priority</th></tr></thead><tbody>
+    ${ipList.map(t=>`<tr>
+      <td><span class="ticket-key">${t.key}</span></td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</td>
+      <td>${renderAvatars(t.assignees,2)}</td>
+      <td>${priorityBadge(t.priority)}</td>
+    </tr>`).join('')}
+    </tbody></table></div>`
+  : `<div style="padding:20px;color:var(--text-muted);font-size:13px">No tickets in progress.</div>`;
 </script>
 </body></html>
