@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head><meta charset="UTF-8"/>
   <meta name="author" content="Suji Kumar C" /><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Teal PMS — Dashboard</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4/dist/chart.umd.min.js"></script></head>
+<title>Teal PMS — Dashboard</title><link rel="icon" href="favicon.svg"/><meta name="theme-color" content="#FBFBFD" media="(prefers-color-scheme: light)"/><meta name="theme-color" content="#07080D" media="(prefers-color-scheme: dark)"/><link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin/><link rel="stylesheet" href="css/style.css"/>
+<script src="js/vendor/chart.umd.min.js"></script></head>
 <body>
 <script src="js/data.js"></script><script src="js/common.js"></script>
 <script>seedDemoData(); buildNav('dashboard');</script>
@@ -22,7 +22,7 @@
       <div class="chart-wrap"><canvas id="priorityChart"></canvas></div>
     </div>
     <div class="card card-body" style="display:flex;flex-direction:column">
-      <div style="font-weight:700;margin-bottom:12px;font-size:14px">🕐 Recent Activity</div>
+      <div style="font-weight:700;margin-bottom:12px;font-size:14px"><i data-ic="clock"></i> Recent Activity</div>
       <div id="activity-feed" style="flex:1;overflow-y:auto;max-height:220px"></div>
     </div>
   </div>
@@ -31,14 +31,14 @@
   <div class="grid-2" style="margin-bottom:20px">
     <div class="card">
       <div class="card-header">
-        <span style="font-weight:700;font-size:14px">🔄 Active Sprints</span>
+        <span style="font-weight:700;font-size:14px"><i data-ic="refresh"></i> Active Sprints</span>
         <a href="scrum.html" class="btn btn-outline btn-sm">View Sprints →</a>
       </div>
       <div id="sprints-panel"></div>
     </div>
     <div class="card">
       <div class="card-header">
-        <span style="font-weight:700;font-size:14px">🏁 Milestones</span>
+        <span style="font-weight:700;font-size:14px"><i data-ic="flag"></i> Milestones</span>
         <a href="roadmap.html" class="btn btn-outline btn-sm">View Roadmap →</a>
       </div>
       <div id="milestones-panel"></div>
@@ -49,14 +49,14 @@
   <div class="grid-2">
     <div class="card">
       <div class="card-header">
-        <span style="font-weight:700;font-size:14px">⚠️ Overdue Tickets</span>
+        <span style="font-weight:700;font-size:14px"><i data-ic="alert"></i> Overdue Tickets</span>
         <a href="tickets.html" class="btn btn-outline btn-sm">View All →</a>
       </div>
       <div id="overdue-panel"></div>
     </div>
     <div class="card">
       <div class="card-header">
-        <span style="font-weight:700;font-size:14px">⚡ In Progress</span>
+        <span style="font-weight:700;font-size:14px"><i data-ic="zap"></i> In Progress</span>
         <a href="board.html" class="btn btn-outline btn-sm">Open Board →</a>
       </div>
       <div id="inprog-panel"></div>
@@ -79,10 +79,10 @@ const blocked = tickets.filter(t=>t.status==='Blocked').length;
 const overdue = tickets.filter(t=>t.dueDate&&new Date(t.dueDate)<new Date()&&t.status!=='Done').length;
 const pct = tickets.length ? Math.round(done/tickets.length*100) : 0;
 document.getElementById('stat-tiles').innerHTML = [
-  {icon:'🎫', val:tickets.length,   label:'Total Tickets',   col:BLUE,   sub:`${pct}% done`},
-  {icon:'✅', val:done,             label:'Completed',        col:PASS,   sub:`+${inProg} in progress`},
-  {icon:'🔴', val:overdue,          label:'Overdue',          col:FAIL,   sub:'Need attention'},
-  {icon:'🚫', val:blocked,          label:'Blocked',          col:WARN,   sub:'Escalate now'},
+  {icon:'<i data-ic="ticket"></i> ', val:tickets.length,   label:'Total Tickets',   col:BLUE,   sub:`${pct}% done`},
+  {icon:'<i data-ic="check"></i> ', val:done,             label:'Completed',        col:PASS,   sub:`+${inProg} in progress`},
+  {icon:'<i data-ic="alert"></i> ', val:overdue,          label:'Overdue',          col:FAIL,   sub:'Need attention'},
+  {icon:'<i data-ic="ban"></i> ', val:blocked,          label:'Blocked',          col:WARN,   sub:'Escalate now'},
 ].map(s=>`<div class="stat-tile">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
     <div style="font-size:24px">${s.icon}</div>
@@ -95,7 +95,7 @@ document.getElementById('stat-tiles').innerHTML = [
 // Status chart
 const statuses=['Backlog','Todo','In Progress','Review','Done','Blocked'];
 const sCounts=statuses.map(s=>tickets.filter(t=>t.status===s).length);
-new Chart(document.getElementById('statusChart'),{type:'doughnut',data:{labels:statuses,datasets:[{data:sCounts,backgroundColor:['#334155','#3b82f6',WARN,PURPLE,PASS,FAIL],borderWidth:0}]},options:{plugins:{legend:{position:'right',labels:{color:tc(),boxWidth:11,font:{size:11}}}},cutout:'68%'}});
+new Chart(document.getElementById('statusChart'),{type:'doughnut',data:{labels:statuses,datasets:[{data:sCounts,backgroundColor:['#94A3B8','#3b82f6',WARN,PURPLE,PASS,FAIL],borderWidth:0}]},options:{plugins:{legend:{position:'right',labels:{color:tc(),boxWidth:11,font:{size:11}}}},cutout:'68%'}});
 
 // Priority chart
 const prios=['Critical','High','Medium','Low'];
@@ -104,7 +104,7 @@ new Chart(document.getElementById('priorityChart'),{type:'doughnut',data:{labels
 
 // Activity feed
 const acts = getActivities().filter(a=>!proj||a.projectId===proj.id||!a.projectId).slice(0,20);
-const actIcons = {created:'🆕',updated:'✏️',comment:'💬',done:'✅',import:'📥'};
+const actIcons = {created:'<i data-ic="plus"></i> ',updated:'<i data-ic="edit"></i> ',comment:'<i data-ic="message"></i> ',done:'<i data-ic="check"></i> ',import:'<i data-ic="import"></i> '};
 function timeAgo(iso) {
   const d = Math.round((Date.now()-new Date(iso))/1000);
   if(d<60) return 'just now'; if(d<3600) return `${Math.floor(d/60)}m ago`;
@@ -166,7 +166,7 @@ document.getElementById('overdue-panel').innerHTML = overdueList.length
       <td style="color:var(--fail);font-size:12px">${fmtDate(t.dueDate)}</td>
     </tr>`).join('')}
     </tbody></table></div>`
-  : `<div style="padding:20px;color:var(--pass);font-size:13px">🎉 No overdue tickets!</div>`;
+  : `<div style="padding:20px;color:var(--pass);font-size:13px"><i data-ic="check"></i> No overdue tickets!</div>`;
 
 // In Progress
 const ipList=tickets.filter(t=>t.status==='In Progress').slice(0,6);
@@ -181,5 +181,4 @@ document.getElementById('inprog-panel').innerHTML = ipList.length
     </tbody></table></div>`
   : `<div style="padding:20px;color:var(--text-muted);font-size:13px">No tickets in progress.</div>`;
 </script>
-<!-- sujikumar.com credit --><style id="ss-credit-css">.ss-credit{display:flex;justify-content:center;padding:16px 12px 20px;font:500 12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}.ss-credit a{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:999px;color:inherit;opacity:.78;text-decoration:none;border:1px solid rgba(148,163,184,.35);transition:opacity .2s,border-color .2s}.ss-credit a:hover{opacity:1;border-color:#8B5CF6}.ss-credit img{width:20px;height:20px;border-radius:5px;display:block}.ss-credit b{font-weight:600}.ss-credit--fixed{position:fixed;left:10px;bottom:10px;z-index:9999;padding:0}.ss-credit--fixed a{background:rgba(11,15,20,.72);color:#e6eaf0;opacity:.9;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}@media print{.ss-credit{display:none}}</style><div class="ss-credit"><a href="https://sujikumar.com/" rel="author" title="Built by Suji Kumar C — Digital Maritime Engineer"><img src="favicon.svg" alt="" width="20" height="20"><span>Built by <b>Suji Kumar C</b> · sujikumar.com</span></a></div>
 </body></html>

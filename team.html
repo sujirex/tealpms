@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head><meta charset="UTF-8"/>
   <meta name="author" content="Suji Kumar C" /><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Teal PMS — Team</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/></head>
+<title>Teal PMS — Team</title><link rel="icon" href="favicon.svg"/><meta name="theme-color" content="#FBFBFD" media="(prefers-color-scheme: light)"/><meta name="theme-color" content="#07080D" media="(prefers-color-scheme: dark)"/><link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin/><link rel="stylesheet" href="css/style.css"/></head>
 <body>
 <script src="js/data.js"></script><script src="js/common.js"></script>
 <script>seedDemoData(); buildNav('team');</script>
 <div class="main-content">
   <div class="page-header">
-    <div><div class="page-title">👥 Team & Workload</div><div class="page-sub">Team members, departments and assigned tickets</div></div>
+    <div><div class="page-title"><i data-ic="users"></i> Team & Workload</div><div class="page-sub">Team members, departments and assigned tickets</div></div>
     <select class="form-control" id="f-dept" onchange="render()" style="max-width:180px"><option value="">All Departments</option></select>
   </div>
   <div id="dept-chips" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
@@ -44,5 +44,4 @@ function render() {
 }
 render();
 </script>
-<!-- sujikumar.com credit --><style id="ss-credit-css">.ss-credit{display:flex;justify-content:center;padding:16px 12px 20px;font:500 12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}.ss-credit a{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:999px;color:inherit;opacity:.78;text-decoration:none;border:1px solid rgba(148,163,184,.35);transition:opacity .2s,border-color .2s}.ss-credit a:hover{opacity:1;border-color:#8B5CF6}.ss-credit img{width:20px;height:20px;border-radius:5px;display:block}.ss-credit b{font-weight:600}.ss-credit--fixed{position:fixed;left:10px;bottom:10px;z-index:9999;padding:0}.ss-credit--fixed a{background:rgba(11,15,20,.72);color:#e6eaf0;opacity:.9;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}@media print{.ss-credit{display:none}}</style><div class="ss-credit"><a href="https://sujikumar.com/" rel="author" title="Built by Suji Kumar C — Digital Maritime Engineer"><img src="favicon.svg" alt="" width="20" height="20"><span>Built by <b>Suji Kumar C</b> · sujikumar.com</span></a></div>
 </body></html>

@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head><meta charset="UTF-8"/>
   <meta name="author" content="Suji Kumar C" /><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Teal PMS — Reports</title><link rel="icon" href="favicon.svg"/><link rel="stylesheet" href="css/style.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script></head>
+<title>Teal PMS — Reports</title><link rel="icon" href="favicon.svg"/><meta name="theme-color" content="#FBFBFD" media="(prefers-color-scheme: light)"/><meta name="theme-color" content="#07080D" media="(prefers-color-scheme: dark)"/><link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin/><link rel="stylesheet" href="css/style.css"/>
+<script src="js/vendor/chart.umd.min.js"></script></head>
 <body>
 <script src="js/data.js"></script><script src="js/common.js"></script>
 <script>seedDemoData(); buildNav('reports');</script>
 <div class="main-content">
   <div class="page-header">
-    <div><div class="page-title">📊 Reports & Analytics</div><div class="page-sub">Project health, workload, and progress insights</div></div>
+    <div><div class="page-title"><i data-ic="chart"></i> Reports & Analytics</div><div class="page-sub">Project health, workload, and progress insights</div></div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
-      <button class="btn btn-primary btn-sm" onclick="exportData()">💾 Backup JSON</button>
+      <button class="btn btn-primary btn-sm" onclick="exportData()"><i data-ic="save"></i> Backup JSON</button>
     </div>
   </div>
 
@@ -28,7 +28,7 @@
   <div class="card card-body" style="margin-bottom:24px"><div style="font-weight:600;margin-bottom:12px">Assignee Workload</div><div class="chart-wrap" style="max-height:280px"><canvas id="workloadChart"></canvas></div></div>
 
   <div class="card" style="margin-bottom:24px">
-    <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0"><span style="font-weight:600">🔴 Overdue Tickets</span><span id="overdue-count" class="badge badge-critical"></span></div>
+    <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0"><span style="font-weight:600"><i data-ic="alert"></i> Overdue Tickets</span><span id="overdue-count" class="badge badge-critical"></span></div>
     <div id="overdue-table"></div>
   </div>
 
@@ -44,7 +44,7 @@ const tickets = proj ? getTicketsByProject(proj.id) : [];
 const team = getTeam();
 const sprints = proj ? getSprintsByProject(proj.id) : [];
 
-const TEAL='#0DC8C8', TEAL2='#0A9696', WARN='#f59e0b', FAIL='#ef4444', PASS='#10b981';
+const TEAL='#7C3AED', TEAL2='#6D28D9', WARN='#f59e0b', FAIL='#ef4444', PASS='#10b981';
 const textColor = () => getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#aaa';
 
 // Summary tiles
@@ -53,16 +53,16 @@ const blocked=tickets.filter(t=>t.status==='Blocked').length;
 const overdue=tickets.filter(t=>t.dueDate && new Date(t.dueDate)<new Date() && t.status!=='Done').length;
 const pct=tickets.length?Math.round(done/tickets.length*100):0;
 document.getElementById('summary-tiles').innerHTML = [
-  {label:'Total Tickets',val:tickets.length,icon:'🎫',col:'var(--teal)'},
-  {label:'Completed',val:`${done} (${pct}%)`,icon:'✅',col:'var(--pass)'},
-  {label:'Overdue',val:overdue,icon:'⚠️',col:'var(--fail)'},
-  {label:'Blocked',val:blocked,icon:'🚫',col:'#f59e0b'},
+  {label:'Total Tickets',val:tickets.length,icon:'<i data-ic="ticket"></i> ',col:'var(--teal)'},
+  {label:'Completed',val:`${done} (${pct}%)`,icon:'<i data-ic="check"></i> ',col:'var(--pass)'},
+  {label:'Overdue',val:overdue,icon:'<i data-ic="alert"></i> ',col:'var(--fail)'},
+  {label:'Blocked',val:blocked,icon:'<i data-ic="ban"></i> ',col:'var(--warn)'},
 ].map(s=>`<div class="stat-tile"><div class="stat-icon" style="color:${s.col}">${s.icon}</div><div class="stat-val" style="color:${s.col}">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
 
 // Charts
 const statusGroups = ['Backlog','Todo','In Progress','Review','Done','Blocked'];
 const statusCounts = statusGroups.map(s=>tickets.filter(t=>t.status===s).length);
-new Chart(document.getElementById('statusChart'),{type:'doughnut',data:{labels:statusGroups,datasets:[{data:statusCounts,backgroundColor:['#374151','#60a5fa',TEAL,WARN,PASS,FAIL],borderWidth:0}]},options:{plugins:{legend:{labels:{color:textColor(),boxWidth:12}}},cutout:'65%'}});
+new Chart(document.getElementById('statusChart'),{type:'doughnut',data:{labels:statusGroups,datasets:[{data:statusCounts,backgroundColor:['#94A3B8','#60a5fa',TEAL,WARN,PASS,FAIL],borderWidth:0}]},options:{plugins:{legend:{labels:{color:textColor(),boxWidth:12}}},cutout:'65%'}});
 
 const prioGroups=['Critical','High','Medium','Low'];
 const prioCounts=prioGroups.map(p=>tickets.filter(t=>t.priority===p).length);
@@ -70,17 +70,17 @@ new Chart(document.getElementById('priorityChart'),{type:'doughnut',data:{labels
 
 const typeGroups=['Task','Bug','Feature','Story','Improvement','Epic'];
 const typeCounts=typeGroups.map(tp=>tickets.filter(t=>t.type===tp).length);
-new Chart(document.getElementById('typeChart'),{type:'bar',data:{labels:typeGroups,datasets:[{data:typeCounts,backgroundColor:[TEAL,FAIL,'#60a5fa',WARN,PASS,'#8b5cf6'],borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:textColor()}},y:{ticks:{color:textColor(),stepSize:1},grid:{color:'rgba(255,255,255,.05)'}}}}});
+new Chart(document.getElementById('typeChart'),{type:'bar',data:{labels:typeGroups,datasets:[{data:typeCounts,backgroundColor:[TEAL,FAIL,'#60a5fa',WARN,PASS,'#8b5cf6'],borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:textColor()}},y:{ticks:{color:textColor(),stepSize:1},grid:{color:gridColor()}}}}});
 
 const assigneeCounts={};
 tickets.forEach(t=>(t.assignees||[]).forEach(a=>{assigneeCounts[a]=(assigneeCounts[a]||0)+1;}));
 const topAssignees=Object.entries(assigneeCounts).sort((a,b)=>b[1]-a[1]).slice(0,12);
-new Chart(document.getElementById('workloadChart'),{type:'bar',data:{labels:topAssignees.map(a=>a[0]),datasets:[{data:topAssignees.map(a=>a[1]),backgroundColor:TEAL+'99',borderColor:TEAL,borderWidth:2,borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:textColor(),stepSize:1},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:textColor()}}}}});
+new Chart(document.getElementById('workloadChart'),{type:'bar',data:{labels:topAssignees.map(a=>a[0]),datasets:[{data:topAssignees.map(a=>a[1]),backgroundColor:TEAL+'99',borderColor:TEAL,borderWidth:2,borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:textColor(),stepSize:1},grid:{color:gridColor()}},y:{ticks:{color:textColor()}}}}});
 
 // Overdue table
 const overdueList=tickets.filter(t=>t.dueDate&&new Date(t.dueDate)<new Date()&&t.status!=='Done').sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
 document.getElementById('overdue-count').textContent=overdueList.length;
-document.getElementById('overdue-table').innerHTML=overdueList.length?`<div class="table-wrap"><table><thead><tr><th>Key</th><th>Title</th><th>Priority</th><th>Due</th><th>Assignees</th><th>Status</th></tr></thead><tbody>${overdueList.map(t=>{const d=Math.ceil((new Date()-new Date(t.dueDate))/(86400000));return`<tr><td><span class="ticket-key">${t.key}</span></td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</td><td>${priorityBadge(t.priority)}</td><td style="color:var(--fail)">${fmtDate(t.dueDate)} <small>(${d}d)</small></td><td>${renderAvatars(t.assignees,2)}</td><td>${statusBadge(t.status)}</td></tr>`;}).join('')}</tbody></table></div>`:'<div style="padding:16px 20px;color:var(--pass)">🎉 No overdue tickets!</div>';
+document.getElementById('overdue-table').innerHTML=overdueList.length?`<div class="table-wrap"><table><thead><tr><th>Key</th><th>Title</th><th>Priority</th><th>Due</th><th>Assignees</th><th>Status</th></tr></thead><tbody>${overdueList.map(t=>{const d=Math.ceil((new Date()-new Date(t.dueDate))/(86400000));return`<tr><td><span class="ticket-key">${t.key}</span></td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</td><td>${priorityBadge(t.priority)}</td><td style="color:var(--fail)">${fmtDate(t.dueDate)} <small>(${d}d)</small></td><td>${renderAvatars(t.assignees,2)}</td><td>${statusBadge(t.status)}</td></tr>`;}).join('')}</tbody></table></div>`:'<div style="padding:16px 20px;color:var(--pass)"><i data-ic="check"></i> No overdue tickets!</div>';
 
 // Sprint velocity
 document.getElementById('sprint-table').innerHTML=sprints.length?sprints.map(s=>{const st=tickets.filter(t=>t.sprintId===s.id);const sd=st.filter(t=>t.status==='Done').length;return`<div style="display:flex;align-items:center;gap:16px;padding:10px 0;border-bottom:1px solid var(--border-dim)"><div style="flex:1"><div style="font-weight:600;font-size:13px">${s.name}</div><div style="font-size:11px;color:var(--text-muted)">${fmtDate(s.startDate)} → ${fmtDate(s.endDate)}</div></div><div style="width:160px">${progressBar(st.length?Math.round(sd/st.length*100):0)}</div><div style="font-size:12px;color:var(--text-muted)">${sd}/${st.length}</div>${statusBadge(s.status)}</div>`;}).join(''):'<p style="color:var(--text-muted)">No sprints defined.</p>';
@@ -91,5 +91,4 @@ function exportCSV() {
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='teal-pms-export.csv';a.click();
 }
 </script>
-<!-- sujikumar.com credit --><style id="ss-credit-css">.ss-credit{display:flex;justify-content:center;padding:16px 12px 20px;font:500 12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}.ss-credit a{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:999px;color:inherit;opacity:.78;text-decoration:none;border:1px solid rgba(148,163,184,.35);transition:opacity .2s,border-color .2s}.ss-credit a:hover{opacity:1;border-color:#8B5CF6}.ss-credit img{width:20px;height:20px;border-radius:5px;display:block}.ss-credit b{font-weight:600}.ss-credit--fixed{position:fixed;left:10px;bottom:10px;z-index:9999;padding:0}.ss-credit--fixed a{background:rgba(11,15,20,.72);color:#e6eaf0;opacity:.9;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}@media print{.ss-credit{display:none}}</style><div class="ss-credit"><a href="https://sujikumar.com/" rel="author" title="Built by Suji Kumar C — Digital Maritime Engineer"><img src="favicon.svg" alt="" width="20" height="20"><span>Built by <b>Suji Kumar C</b> · sujikumar.com</span></a></div>
 </body></html>

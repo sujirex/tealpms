@@ -138,16 +138,95 @@ function seedDemoData() {
 }
 
 /* ---- Theme ---- */
+// Saved choice wins; otherwise follow the device setting.
+function savedTheme() {
+  try { const t = localStorage.getItem(KEY('theme')); return (t === 'light' || t === 'dark') ? t : null; } catch { return null; }
+}
 function initTheme() {
-  const saved = localStorage.getItem(KEY('theme')) || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
+  const t = savedTheme() || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', t);
 }
 function toggleTheme() {
   const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', cur);
-  localStorage.setItem(KEY('theme'), cur);
+  try { localStorage.setItem(KEY('theme'), cur); } catch {}
+  refreshChartTheme();
 }
 initTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!savedTheme()) { initTheme(); refreshChartTheme(); } });
+
+// Chart colours follow the theme (charts are drawn on canvas, so CSS variables are read here)
+function gridColor() { return document.documentElement.getAttribute('data-theme') === 'dark' ? 'rgba(255,255,255,.08)' : 'rgba(10,11,18,.08)'; }
+function refreshChartTheme() {
+  if (typeof Chart === 'undefined') return;
+  const muted = getComputedStyle(document.documentElement).getPropertyValue('--text-dim').trim() || '#4B5263';
+  Chart.defaults.color = muted;
+  Chart.defaults.font.family = "'Geist', system-ui, sans-serif";
+  Object.values(Chart.instances || {}).forEach(ch => {
+    Object.values(ch.options.scales || {}).forEach(sc => { if (sc.ticks) sc.ticks.color = muted; if (sc.grid) sc.grid.color = gridColor(); });
+    if (ch.options.plugins?.legend?.labels) ch.options.plugins.legend.labels.color = muted;
+    ch.update('none');
+  });
+}
+document.addEventListener('DOMContentLoaded', refreshChartTheme);
+
+/* ---- Mobile menu ---- */
+function toggleMenu(force) {
+  const open = typeof force === 'boolean' ? force : !document.body.classList.contains('nav-open');
+  document.body.classList.toggle('nav-open', open);
+  const b = document.getElementById('menu-toggle');
+  if (b) { b.setAttribute('aria-expanded', open); b.setAttribute('aria-label', open ? 'Close menu' : 'Open menu'); }
+}
+
+/* ---- Line icons (replace emoji): <i data-ic="name"></i> is swapped for an SVG, including content rendered later ---- */
+const TP_ICONS = {
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  pin:'<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  board:'<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  refresh:'<path d="M20 12a8 8 0 1 1-2.3-5.6L20 8"/><path d="M20 3v5h-5"/>',
+  flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  alert:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+  zap:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  ticket:'<path d="M3 8a2 2 0 0 0 0 4v0a2 2 0 0 1 0 4v2h18v-2a2 2 0 0 1 0-4 2 2 0 0 0 0-4V6H3z"/><path d="M13 6v12" stroke-dasharray="2 2"/>',
+  check:'<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/>',
+  ban:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  message:'<path d="M4 5h16v11H9l-5 4z"/>',
+  import:'<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',
+  book:'<path d="M4 4h6a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h7z"/>',
+  map:'<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  save:'<path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/>',
+  trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  package:'<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+  folder:'<path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  x:'<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>',
+};
+function tpIcon(name) {
+  const d = TP_ICONS[name]; if (!d) return '';
+  return `<span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${d}</svg></span>`;
+}
+function hydrateIcons(root) { (root || document).querySelectorAll('i[data-ic]').forEach(el => { el.outerHTML = tpIcon(el.dataset.ic); }); }
+new MutationObserver(muts => {
+  for (const m of muts) for (const n of m.addedNodes) {
+    if (n.nodeType !== 1) continue;
+    if (n.matches?.('i[data-ic]')) n.outerHTML = tpIcon(n.dataset.ic); else if (n.querySelector?.('i[data-ic]')) hydrateIcons(n);
+  }
+}).observe(document.documentElement, { childList: true, subtree: true });
+
+/* ---- sujikumar.com credit badge (one place for every page) ---- */
+document.addEventListener('DOMContentLoaded', () => {
+  hydrateIcons();
+  if (document.querySelector('.ss-credit')) return;
+  const div = document.createElement('div');
+  div.className = 'ss-credit';
+  div.innerHTML = '<a href="https://sujikumar.com/" rel="author" title="Built by Suji Kumar C — Digital Maritime Engineer"><img src="favicon.svg" alt="" width="20" height="20"><span>Built by <b>Suji Kumar C</b> · sujikumar.com</span></a>';
+  document.body.appendChild(div);
+});
 
 /* ---- Nav builder ---- */
 const NAV = [
@@ -198,15 +277,10 @@ function buildNav(activeKey) {
 
   document.body.insertAdjacentHTML('afterbegin', `
     <nav class="sidebar">
-      <div class="sidebar-logo">
-        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="8" fill="#0DC8C8"/>
-          <rect x="5" y="7" width="22" height="4" rx="2" fill="#0a0a0a"/>
-          <rect x="5" y="14" width="15" height="3.5" rx="1.75" fill="#0a0a0a" opacity=".8"/>
-          <rect x="5" y="21" width="19" height="3.5" rx="1.75" fill="#0a0a0a" opacity=".9"/>
-        </svg>
-        <div class="sidebar-logo-text"><span>Teal</span>PMS</div>
-      </div>
+      <a class="sidebar-logo" href="index.html">
+        <img src="favicon.svg" alt="SS emblem" width="36" height="36">
+        <div class="sidebar-logo-text"><span>Teal</span>PMS<small>Project management</small></div>
+      </a>
       ${proj ? `
       <div class="sidebar-project" onclick="window.location='projects.html'">
         <div class="sidebar-project-label">Active Project</div>
@@ -221,12 +295,14 @@ function buildNav(activeKey) {
         </a>
       </div>
     </nav>
+    <div class="sidebar-backdrop" onclick="toggleMenu(false)"></div>
     <div class="topbar">
       <div class="topbar-left">
+        <button class="menu-toggle" id="menu-toggle" onclick="toggleMenu()" aria-label="Open menu" aria-expanded="false"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
         <div class="topbar-breadcrumb">Teal PMS &nbsp;/&nbsp; <strong>${pageName}</strong></div>
       </div>
       <div class="topbar-actions">
-        ${proj ? `<span style="font-size:11px;color:var(--teal,#0DC8C8);background:rgba(13,200,200,.1);padding:3px 10px;border:1px solid rgba(13,200,200,.25);border-radius:20px;font-weight:700;letter-spacing:.5px">${proj.key}</span>` : ''}
+        ${proj ? `<span class="proj-key">${proj.key}</span>` : ''}
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">${navIcon('moon')}</button>
       </div>
     </div>
@@ -241,6 +317,15 @@ function buildNav(activeKey) {
 }
 
 /* ---- Utilities ---- */
+// Per-project ticket stats (used by the Projects page; it was called but never defined)
+function calcProjectStats(projectId) {
+  const tks = getTicketsByProject(projectId);
+  const total = tks.length;
+  const done = tks.filter(t => t.status === 'Done').length;
+  const inProg = tks.filter(t => t.status === 'In Progress').length;
+  const overdue = tks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Done').length;
+  return { total, done, inProg, overdue, pct: total ? Math.round(done / total * 100) : 0 };
+}
 function fmtDate(iso) {
   if (!iso) return '—';
   try { return new Date(iso + (iso.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }); }
